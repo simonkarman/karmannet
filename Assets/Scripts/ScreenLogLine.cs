@@ -27,9 +27,9 @@ public class ScreenLogLine : MonoBehaviour {
         rectTransform.sizeDelta = sizeDelta;
     }
 
-    public void Set(string log, string stackTrace, LogType type) {
+    public void Set(string log, LogType type) {
         text.color = LogTypeToColor(type);
-        text.text = string.Format("<i>{0}</i> > {1}", Time.realtimeSinceStartup.ToString("00.000"), log);
+        text.text = string.Format("<i>{0}</i> {1}> {2}", Time.realtimeSinceStartup.ToString("00.000"), type, log);
     }
 
     private static Color LogTypeToColor(LogType type) {
@@ -39,7 +39,7 @@ public class ScreenLogLine : MonoBehaviour {
         case LogType.Error:
             return Color.red;
         case LogType.Warning:
-            return Color.yellow;
+            return Color.magenta;
         case LogType.Assert:
         case LogType.Exception:
         default:

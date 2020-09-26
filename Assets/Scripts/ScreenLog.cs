@@ -21,7 +21,9 @@ public class ScreenLog : MonoBehaviour {
         ThreadManager.Activate();
         lines = new ScreenLogLine[maxNumberOfLines];
         Application.logMessageReceivedThreaded += HandleLog;
-        Debug.Log(string.Format("Build id: {0}", Application.buildGUID));
+
+        string buildId = Application.isEditor ? "<IN EDITOR>" : Application.buildGUID;
+        Debug.Log(string.Format("Build id: {0}", buildId));
     }
 
     protected void OnDestroy() {
@@ -32,7 +34,7 @@ public class ScreenLog : MonoBehaviour {
         ThreadManager.ExecuteOnMainThread(() => {
             ScreenLogLine screenLogLine = Instantiate(linePrefab.gameObject, linesParent).GetComponent<ScreenLogLine>();
             screenLogLine.transform.SetAsFirstSibling();
-            screenLogLine.Set(log, stackTrace, type);
+            screenLogLine.Set(log, type);
 
             if (lines[currentIndex] != null) {
                 Destroy(lines[currentIndex].gameObject);

@@ -4,157 +4,120 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Text;
 using UnityEngine;
+using System.Linq;
 
-// State object for receiving data from remote device.
-public class ClientStateObject {
-    // Client socket.
-    public Socket workSocket = null;
-    // Size of receive buffer.
-    public const int BufferSize = 256;
-    // Receive buffer.
-    public byte[] buffer = new byte[BufferSize];
-    // Received data string.
-    public StringBuilder sb = new StringBuilder();
-}
+public class AsynchronousClient {
+    public static readonly int DEFAULT_PORT = 14641;
+    public static readonly int BUFFER_SIZE = 256;
+    public static readonly string MESSAGE_SEPARATOR = "||";
 
-public class AsynchronousClient : MonoBehaviour {
-    // The port number for the remote device.
-    private const int port = 14641;
+    public readonly IPEndPoint serverEndpoint;
+    public readonly string username;
+    private readonly Action<string> MessageCallback;
+    private readonly Socket socket;
+    private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
+    private byte[] buffer = new byte[BUFFER_SIZE];
 
-    // ManualResetEvent instances signal completion.
-    private static ManualResetEvent connectDone = new ManualResetEvent(false);
-    private static ManualResetEvent sendDone = new ManualResetEvent(false);
-    private static ManualResetEvent receiveDone = new ManualResetEvent(false);
-
-    // The response from the remote device.
-    private static string response = string.Empty;
-    private Thread thread;
-
-    protected void Start() {
-        thread = new Thread(() => StartClient());
-        thread.Start();
-    }
-
-    protected void OnDestroy() {
-        thread.Abort();
-    }
-
-    private static void StartClient() {
-        Debug.Log("Starting client");
-        // Connect to a remote device.
-        try {
-            // Establish the remote endpoint for the socket.
-            IPEndPoint remoteEP = new IPEndPoint(IPAddress.Parse("127.0.0.1"), port);
-            Debug.Log(string.Format("Connecting to server at {0}", remoteEP));
-
-            // Create a TCP/IP socket.  
-            Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            // Connect to the remote endpoint.
-            client.BeginConnect(remoteEP, new AsyncCallback(ConnectCallback), client);
-            connectDone.WaitOne();
-            Debug.Log(string.Format("Conntected to server at {0}", remoteEP));
-
-            // Send test data to the remote device.
-            Send(client, "This is a test<EOF>");
-            sendDone.WaitOne();
-
-            // Receive the response from the remote device.
-            Receive(client);
-            receiveDone.WaitOne();
-
-            // Write the response to the console.
-            Debug.Log(string.Format("Response received: {0}", response));
-
-            // Release the socket.
-            client.Shutdown(SocketShutdown.Both);
-            client.Close();
-            Debug.Log("Disconnected from server");
-
-        } catch (Exception e) {
-            Debug.LogError(e.ToString());
+    private readonly float realtimeSinceStartupAtMomentOfConnectionEstablished;
+    public float RealtimeSinceConnectionEstablished {
+        get {
+            return Time.realtimeSinceStartup - realtimeSinceStartupAtMomentOfConnectionEstablished;
         }
     }
 
-    private static void ConnectCallback(IAsyncResult ar) {
+    public bool Connected {
+        get {
+            return socket.Connected;
+        }
+    }
+
+    private static IPEndPoint ParseConnectionString(string connectionString) {
         try {
-            // Retrieve the socket from the state object.
-            Socket client = (Socket)ar.AsyncState;
+            string[] parts = connectionString.Split(':');
+            if (parts[0] == "localhost") {
+                parts[0] = "127.0.0.1";
+            }
+            if (!IPAddress.TryParse(parts[0], out IPAddress serverIpAddress)) {
+                serverIpAddress = Dns.GetHostEntry(parts[0]).AddressList[0];
+            }
+            int port = parts.Length == 1 ? DEFAULT_PORT : int.Parse(parts[1]);
+            return new IPEndPoint(serverIpAddress, port);
+        } catch (Exception) {
+            throw new InvalidOperationException("Invalid connection string provided");
+        }
+    }
 
-            // Complete the connection.
-            client.EndConnect(ar);
+    public AsynchronousClient(string connectionString, string username, Action<string> MessageCallback) {
+        serverEndpoint = ParseConnectionString(connectionString);
+        this.username = username;
+        this.MessageCallback = MessageCallback;
 
-            Debug.Log(string.Format("Connected to {0}", client.RemoteEndPoint.ToString()));
+        Debug.Log(string.Format("Connecting to server at {0} as {1}", serverEndpoint, username));
+        socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        socket.BeginConnect(serverEndpoint, new AsyncCallback(ConnectCallback), null);
 
-            // Signal that the connection has been made.
+        connectDone.WaitOne();
+
+        if (socket.Connected) {
+            Debug.Log("Succesfully connected to the server");
+            realtimeSinceStartupAtMomentOfConnectionEstablished = Time.realtimeSinceStartup;
+            BeginReceive(new StringBuilder());
+        } else {
+            Debug.LogWarning("Failed to connect to the server");
+        }
+    }
+
+    private void ConnectCallback(IAsyncResult ar) {
+        try {
+            socket.EndConnect(ar);
+        } catch (Exception e) {
+            Debug.LogError(e.ToString());
+        } finally {
             connectDone.Set();
-        } catch (Exception e) {
-            Debug.LogError(e.ToString());
         }
     }
 
-    private static void Receive(Socket client) {
-        try {
-            // Create the state object.
-            ClientStateObject state = new ClientStateObject();
-            state.workSocket = client;
+    public void Send(string message) {
+        Debug.Log(string.Format("Sending message to the server: {0}", message));
+        byte[] bytes = Encoding.ASCII.GetBytes(string.Format("{0}{1}", message, MESSAGE_SEPARATOR));
+        socket.BeginSend(bytes, 0, bytes.Length, 0, new AsyncCallback(SendCallback), null);
+    }
 
-            // Begin receiving the data from the remote device.
-            client.BeginReceive(state.buffer, 0, ClientStateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
+    private void SendCallback(IAsyncResult ar) {
+        try {
+            int bytesSent = socket.EndSend(ar);
+            Debug.Log(string.Format("Successfully sent {0} byte(s) to the server.", bytesSent));
         } catch (Exception e) {
-            Debug.LogError(e.ToString());
+            Debug.LogError(string.Format("An error occurred in the send callback: {0}", e.ToString()));
         }
     }
 
-    private static void ReceiveCallback(IAsyncResult ar) {
-        try {
-            // Retrieve the state object and the client socket from the asynchronous state object.
-            ClientStateObject state = (ClientStateObject)ar.AsyncState;
-            Socket client = state.workSocket;
+    private void BeginReceive(StringBuilder messageBuilder) {
+        socket.BeginReceive(buffer, 0, buffer.Length, 0, new AsyncCallback(ReceiveCallback), messageBuilder);
+    }
 
-            // Read data from the remote device.
-            int bytesRead = client.EndReceive(ar);
+    private void ReceiveCallback(IAsyncResult ar) {
+        try {
+            StringBuilder messageBuilder = (StringBuilder)ar.AsyncState;
+            int bytesRead = socket.EndReceive(ar);
 
             if (bytesRead > 0) {
-                // There might be more data, so store the data received so far.
-                state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));
-
-                // Get the rest of the data.  
-                client.BeginReceive(state.buffer, 0, ClientStateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
+                string messagePart = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                Debug.Log(string.Format("Received part of a message from the server: {0}", messagePart));
+                BeginReceive(messageBuilder);
             } else {
-                // All the data has arrived; put it in response.
-                if (state.sb.Length > 1) {
-                    response = state.sb.ToString();
-                }
-                // Signal that all bytes have been received.
-                receiveDone.Set();
+                Debug.Log(string.Format("Full message received: {0}", messageBuilder));
+                BeginReceive(new StringBuilder());
             }
         } catch (Exception e) {
-            Debug.LogError(e.ToString());
+            Debug.LogError(string.Format("An error occurred in the receive callback: {0}", e.ToString()));
         }
     }
 
-    private static void Send(Socket client, string data) {
-        // Convert the string data to byte data using ASCII encoding.
-        byte[] byteData = Encoding.ASCII.GetBytes(data);
-
-        // Begin sending the data to the remote device.  
-        client.BeginSend(byteData, 0, byteData.Length, 0, new AsyncCallback(SendCallback), client);
-    }
-
-    private static void SendCallback(IAsyncResult ar) {
-        try {
-            // Retrieve the socket from the state object.
-            Socket client = (Socket)ar.AsyncState;
-
-            // Complete sending the data to the remote device.
-            int bytesSent = client.EndSend(ar);
-            Debug.Log(string.Format("Sent {0} bytes to server.", bytesSent));
-
-            // Signal that all bytes have been sent.
-            sendDone.Set();
-        } catch (Exception e) {
-            Debug.LogError(e.ToString());
-        }
+    public void Disconnect() {
+        Debug.Log("Disconnecting from server");
+        socket.Shutdown(SocketShutdown.Both);
+        socket.Close();
+        Debug.Log("Successfully disconnected from the server");
     }
 }

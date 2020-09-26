@@ -433,9 +433,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1040089225}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9d3be7a831663234daecf061f3a5d96d, type: 3}
+  m_Script: {fileID: 11500000, guid: db78f068aa93d854da6ebf15e23f09bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  messageSendInternal: 10
+  stayConnectedDuration: 60
 --- !u!4 &1040089227
 Transform:
   m_ObjectHideFlags: 0

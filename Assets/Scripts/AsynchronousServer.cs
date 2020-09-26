@@ -55,9 +55,8 @@ public class AsynchronousServer : MonoBehaviour {
     public static void AcceptCallback(IAsyncResult ar) {
         // Get the socket that handles the client request.
         Socket socket = (Socket)ar.AsyncState;
-        Debug.Log(string.Format("Accepting incoming connection from {0}", socket.RemoteEndPoint));
-
         Socket handler = socket.EndAccept(ar);
+        Debug.Log(string.Format("Accepting incoming connection from {0}", handler.RemoteEndPoint));
         connectionEstablished.Set();
 
         // Create the state object.
@@ -83,7 +82,7 @@ public class AsynchronousServer : MonoBehaviour {
 
             // Check for end-of-file tag. If it is not there, read more data.
             content = state.sb.ToString();
-            if (content.IndexOf("<EOF>") > -1) {
+            if (content.IndexOf("||") > -1) {
                 // All the data has been read from the client. Display it on the console.
                 Debug.Log(string.Format("Read {0} bytes from {1}.\nData: {2}", content.Length, handler.RemoteEndPoint, content));
                 // Echo the data back to the client.
@@ -115,10 +114,12 @@ public class AsynchronousServer : MonoBehaviour {
             int bytesSent = handler.EndSend(ar);
             Debug.Log(string.Format("Sent {0} bytes to client at {1}", bytesSent, handler.RemoteEndPoint));
             
+            /*
             string remoteEndpointName = handler.RemoteEndPoint.ToString();
             handler.Shutdown(SocketShutdown.Both);
             handler.Close();
             Debug.Log(string.Format("Closed the connection with {0}", remoteEndpointName));
+            */
 
         } catch (Exception e) {
             Debug.LogError(e.ToString());
