@@ -22,12 +22,9 @@ public class AsynchronousClient : MonoBehaviour {
     private const int port = 14641;
 
     // ManualResetEvent instances signal completion.
-    private static ManualResetEvent connectDone =
-        new ManualResetEvent(false);
-    private static ManualResetEvent sendDone =
-        new ManualResetEvent(false);
-    private static ManualResetEvent receiveDone =
-        new ManualResetEvent(false);
+    private static ManualResetEvent connectDone = new ManualResetEvent(false);
+    private static ManualResetEvent sendDone = new ManualResetEvent(false);
+    private static ManualResetEvent receiveDone = new ManualResetEvent(false);
 
     // The response from the remote device.
     private static string response = string.Empty;

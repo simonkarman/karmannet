@@ -14,7 +14,9 @@ public class ScreenLogLine : MonoBehaviour {
     protected void Start() {
         rectTransform = GetComponent<RectTransform>();
         initialSizeDelta = rectTransform.sizeDelta;
-        ToggleOpen();
+        if (open) {
+            ToggleOpen();
+        }
     }
 
     public void ToggleOpen() {
