@@ -2,7 +2,6 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Text;
 using UnityEngine;
 
 public enum AsynchronousClientStatus {
@@ -13,20 +12,22 @@ public enum AsynchronousClientStatus {
 
 public class AsynchronousClient {
     public static readonly int DEFAULT_PORT = 14641;
-    public static readonly int BUFFER_SIZE = 256;
-    public static readonly string MESSAGE_SEPARATOR = "||";
+    public static readonly int RECEIVING_BUFFER_SIZE = 256;
+    public static readonly int MAX_PACKET_SIZE = 256;
 
     public readonly IPEndPoint serverEndpoint;
     public readonly string username;
-    private readonly Action<string> MessageCallback;
+    private readonly Action<byte[]> PacketCallback;
     private readonly Socket socket;
     private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
-    private byte[] buffer = new byte[BUFFER_SIZE];
+    private readonly ManualResetEvent receiveDone = new ManualResetEvent(false);
+    private readonly PacketFramer packetFramer;
+    private byte[] receiveBuffer = new byte[RECEIVING_BUFFER_SIZE];
 
-    private float realtimeSinceStartupAtMomentOfConnectionEstablished;
+    private float connectionEstablishedTimestamp;
     public float RealtimeSinceConnectionEstablished {
         get {
-            return Time.realtimeSinceStartup - realtimeSinceStartupAtMomentOfConnectionEstablished;
+            return Time.realtimeSinceStartup - connectionEstablishedTimestamp;
         }
     }
     public AsynchronousClientStatus Status { get; private set; } = AsynchronousClientStatus.NEW;
@@ -47,12 +48,13 @@ public class AsynchronousClient {
         }
     }
 
-    public AsynchronousClient(string connectionString, string username, Action<string> MessageCallback) {
+    public AsynchronousClient(string connectionString, string username, Action<byte[]> PacketCallback) {
         Debug.Log(string.Format("Start of setting up connection to {0} as {1}", connectionString, username));
         ThreadManager.Activate();
         serverEndpoint = ParseConnectionString(connectionString);
         this.username = username;
-        this.MessageCallback = MessageCallback;
+        this.PacketCallback = PacketCallback;
+        packetFramer = new PacketFramer(MAX_PACKET_SIZE, PacketCallback);
         socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
         var connectingThread = new Thread(() => {
@@ -65,9 +67,9 @@ public class AsynchronousClient {
                 Debug.Log("Succesfully connected to the server");
                 Status = AsynchronousClientStatus.CONNECTED;
                 ThreadManager.ExecuteOnMainThread(() => {
-                    realtimeSinceStartupAtMomentOfConnectionEstablished = Time.realtimeSinceStartup;
+                    connectionEstablishedTimestamp = Time.realtimeSinceStartup;
                 });
-                BeginReceive(new StringBuilder());
+                InitiateReceiveLoop();
             } else {
                 Debug.LogWarning("Failed to connect to the server");
                 Status = AsynchronousClientStatus.DISCONNECTED;
@@ -79,7 +81,7 @@ public class AsynchronousClient {
     private void ConnectCallback(IAsyncResult ar) {
         try {
             if (Status != AsynchronousClientStatus.NEW) {
-                Debug.LogError("Client cannot handle connect callback when it is not new");
+                Debug.LogError("Client cannot handle a connect callback when it is not new");
                 return;
             }
             socket.EndConnect(ar);
@@ -90,20 +92,26 @@ public class AsynchronousClient {
         }
     }
 
-    public void Send(string message) {
+    public void Send(byte[] packet) {
         if (Status != AsynchronousClientStatus.CONNECTED) {
             Debug.LogError("Client cannot send when it is not connected");
             return;
         }
 
-        Debug.Log(string.Format("Sending message to the server: {0}", message));
-        byte[] bytes = Encoding.ASCII.GetBytes(string.Format("{0}{1}", message, MESSAGE_SEPARATOR));
+        byte[] bytes = packetFramer.FramePacket(packet);
+        Debug.Log(string.Format(
+            "Sending {0} byte(s) to the server with the first 16 bytes being: {1}{2}",
+            bytes.Length,
+            BitConverter.ToString(bytes, 0, Math.Min(16, bytes.Length)),
+            bytes.Length > 16 ? "-.." : string.Empty
+        ));
+
         socket.BeginSend(bytes, 0, bytes.Length, 0, new AsyncCallback(SendCallback), null);
     }
 
     private void SendCallback(IAsyncResult ar) {
         if (Status != AsynchronousClientStatus.CONNECTED) {
-            Debug.LogError("Client cannot handle send callback when it is not connected");
+            Debug.LogError("Client cannot handle a send callback when it is not connected");
             return;
         }
 
@@ -115,37 +123,38 @@ public class AsynchronousClient {
         }
     }
 
-    private void BeginReceive(StringBuilder messageBuilder) {
-        if (Status != AsynchronousClientStatus.CONNECTED) {
-            Debug.LogError("Client cannot begin receive when it is not connected");
-            return;
-        }
+    private void InitiateReceiveLoop() {
+        Debug.Log("Initiated receive loop, client is ready for incoming packets from the server");
+        while (true) {
+            receiveDone.Reset();
+            if (Status != AsynchronousClientStatus.CONNECTED) {
+                Debug.Log("Breaking out of receive loop since client is no longer connected");
+                break;
+            }
 
-        socket.BeginReceive(buffer, 0, buffer.Length, 0, new AsyncCallback(ReceiveCallback), messageBuilder);
+            socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, 0, new AsyncCallback(ReceiveCallback), null);
+            receiveDone.WaitOne();
+        }
     }
 
     private void ReceiveCallback(IAsyncResult ar) {
-        if (Status != AsynchronousClientStatus.CONNECTED) {
-            Debug.LogError("Client cannot handle receive callback when it is not connected");
-            return;
-        }
-
         try {
-            StringBuilder messageBuilder = (StringBuilder)ar.AsyncState;
-            int bytesRead = socket.EndReceive(ar);
-
-            if (bytesRead > 0) {
-                string messagePart = Encoding.ASCII.GetString(buffer, 0, bytesRead);
-                Debug.Log(string.Format("Received part of a message from the server: {0}", messagePart));
-                messageBuilder.Append(messagePart);
-                BeginReceive(messageBuilder);
-            } else {
-                Debug.Log(string.Format("Full message received: {0}", messageBuilder));
-                MessageCallback(messageBuilder.ToString());
-                // BeginReceive(new StringBuilder());
+            int bytesRead = socket.Connected ? socket.EndReceive(ar) : 0;
+            if (bytesRead == 0) {
+                if (Status == AsynchronousClientStatus.CONNECTED) {
+                    Debug.Log("Received an empty packet from the server or the socket is no longer connected, this means the connection has closed");
+                    Disconnect();
+                }
+                return;
             }
+
+            Debug.Log(string.Format("Received {0} bytes from the server.", bytesRead));
+            packetFramer.Append(receiveBuffer);
+
         } catch (Exception e) {
             Debug.LogError(string.Format("An error occurred in the receive callback: {0}", e.ToString()));
+        } finally {
+            receiveDone.Set();
         }
     }
 

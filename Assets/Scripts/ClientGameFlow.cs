@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Text;
+using UnityEngine;
 
 public class ClientGameFlow : MonoBehaviour {
     [SerializeField]
@@ -18,7 +19,11 @@ public class ClientGameFlow : MonoBehaviour {
         Debug.Log(string.Format("Build id: {0}", buildId));
 
         username = string.Format("User-" + (Random.value * 10000).ToString("0000"));
-        client = new AsynchronousClient(connectionString, username, MessageCallback);
+        client = new AsynchronousClient(connectionString, username, PacketCallback);
+    }
+
+    public void OnDestroy() {
+        client.Disconnect();
     }
 
     public void Update() {
@@ -29,14 +34,18 @@ public class ClientGameFlow : MonoBehaviour {
         }
 
         if (client.Status == AsynchronousClientStatus.CONNECTED) {
-            DoConnectedLogic();
+            //DoConnectedLogic();
         }
     }
 
     private void DoConnectedLogic() {
         if (!welcomeMessageSend) {
             welcomeMessageSend = true;
-            client.Send(string.Format("Hello, server! My username is {0}.", username));
+            client.Send(Encoding.ASCII.GetBytes(string.Format(
+                "Hello, server! My username is {0}.",
+                username
+            )));
+            client.Send(Encoding.ASCII.GetBytes("Hi."));
         }
 
         if (client.RealtimeSinceConnectionEstablished > stayConnectedDuration) {
@@ -46,11 +55,15 @@ public class ClientGameFlow : MonoBehaviour {
         timeSinceLastMessage += Time.deltaTime;
         if (timeSinceLastMessage >= messageSendInternal) {
             timeSinceLastMessage -= messageSendInternal;
-            client.Send(string.Format("{0} has been around for {1} second(s).", client.username, client.RealtimeSinceConnectionEstablished));
+            client.Send(Encoding.ASCII.GetBytes(string.Format(
+                "{0} has been around for {1} second(s).",
+                client.username,
+                client.RealtimeSinceConnectionEstablished
+            )));
         }
     }
 
-    public void MessageCallback(string message) {
-        new GameObject(message).transform.parent = transform;
+    public void PacketCallback(byte[] packet) {
+        Debug.Log(string.Format("Client Game Flow script received: {0}", Encoding.ASCII.GetString(packet)));
     }
 }
