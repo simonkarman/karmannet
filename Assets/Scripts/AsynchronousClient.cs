@@ -49,6 +49,7 @@ public class AsynchronousClient {
 
     public AsynchronousClient(string connectionString, string username, Action<string> MessageCallback) {
         Debug.Log(string.Format("Start of setting up connection to {0} as {1}", connectionString, username));
+        ThreadManager.Activate();
         serverEndpoint = ParseConnectionString(connectionString);
         this.username = username;
         this.MessageCallback = MessageCallback;
@@ -63,7 +64,9 @@ public class AsynchronousClient {
             if (socket.Connected) {
                 Debug.Log("Succesfully connected to the server");
                 Status = AsynchronousClientStatus.CONNECTED;
-                realtimeSinceStartupAtMomentOfConnectionEstablished = Time.realtimeSinceStartup;
+                ThreadManager.ExecuteOnMainThread(() => {
+                    realtimeSinceStartupAtMomentOfConnectionEstablished = Time.realtimeSinceStartup;
+                });
                 BeginReceive(new StringBuilder());
             } else {
                 Debug.LogWarning("Failed to connect to the server");
