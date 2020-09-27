@@ -2,26 +2,41 @@
 
 public class ClientGameFlow : MonoBehaviour {
     [SerializeField]
+    private string connectionString = "localhost";
+    [SerializeField]
     private float messageSendInternal = 10f;
     [SerializeField]
     private float stayConnectedDuration = 60f;
 
     private AsynchronousClient client = null;
     private float timeSinceLastMessage = 0f;
+    private bool welcomeMessageSend = false;
+    private string username;
 
     public void Start() {
-        string username = string.Format("User-" + (Random.value * 10000).ToString("0000"));
-        string connectionString = "localhost";
+        string buildId = Application.isEditor ? "<IN EDITOR>" : Application.buildGUID;
+        Debug.Log(string.Format("Build id: {0}", buildId));
+
+        username = string.Format("User-" + (Random.value * 10000).ToString("0000"));
         client = new AsynchronousClient(connectionString, username, MessageCallback);
-        if (client.Connected) {
-            client.Send(string.Format("Hello, server! My username is {0}.", username));
-        }
     }
 
     public void Update() {
-        if (client == null || !client.Connected) {
-            client = null;
-            return;
+        if (Input.GetKeyDown(KeyCode.BackQuote)) {
+            foreach (ScreenLog screenLog in FindObjectsOfType<ScreenLog>()) {
+                screenLog.ToggleVisibility();
+            }
+        }
+
+        if (client.Status == AsynchronousClientStatus.CONNECTED) {
+            DoConnectedLogic();
+        }
+    }
+
+    private void DoConnectedLogic() {
+        if (!welcomeMessageSend) {
+            welcomeMessageSend = true;
+            client.Send(string.Format("Hello, server! My username is {0}.", username));
         }
 
         if (client.RealtimeSinceConnectionEstablished > stayConnectedDuration) {

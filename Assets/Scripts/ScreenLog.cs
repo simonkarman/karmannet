@@ -4,6 +4,8 @@ using UnityEngine.SceneManagement;
 
 public class ScreenLog : MonoBehaviour {
     [SerializeField]
+    private GameObject screenLogRootParent = null;
+    [SerializeField]
     private Text headerText = null;
     [SerializeField]
     private ScreenLogLine linePrefab = null;
@@ -13,48 +15,49 @@ public class ScreenLog : MonoBehaviour {
     private int maxNumberOfLines = 20;
 
     private bool visible = true;
-    private int currentIndex = 0;
+    private int currentIndex = -1;
     private ScreenLogLine[] lines;
+    private int duplicationCounter;
+    private string latestLogMessage;
+    private LogType latestLogType;
 
     protected void Awake() {
         headerText.text = string.Format("~ {0} scene of {1} [{2}] by {3}", SceneManager.GetActiveScene().name, Application.productName, Application.version, Application.companyName);
         ThreadManager.Activate();
         lines = new ScreenLogLine[maxNumberOfLines];
         Application.logMessageReceivedThreaded += HandleLog;
-
-        string buildId = Application.isEditor ? "<IN EDITOR>" : Application.buildGUID;
-        Debug.Log(string.Format("Build id: {0}", buildId));
     }
 
     protected void OnDestroy() {
         Application.logMessageReceivedThreaded -= HandleLog;
     }
 
-    private void HandleLog(string log, string stackTrace, LogType type) {
+    private void HandleLog(string logMessage, string stackTrace, LogType logType) {
         ThreadManager.ExecuteOnMainThread(() => {
-            ScreenLogLine screenLogLine = Instantiate(linePrefab.gameObject, linesParent).GetComponent<ScreenLogLine>();
-            screenLogLine.transform.SetAsFirstSibling();
-            screenLogLine.Set(log, type);
-
-            if (lines[currentIndex] != null) {
-                Destroy(lines[currentIndex].gameObject);
+            if (logMessage.Equals(latestLogMessage) && logType.Equals(latestLogType)) {
+                duplicationCounter++;
+                lines[currentIndex].Set(string.Format("{0}x {1}", duplicationCounter, logMessage), logType);
+                return;
             }
-            lines[currentIndex] = screenLogLine;
             currentIndex += 1;
             currentIndex %= maxNumberOfLines;
+
+            duplicationCounter = 0;
+            latestLogMessage = logMessage;
+            latestLogType = logType;
+
+            ScreenLogLine screenLogLine = lines[currentIndex];
+            if (screenLogLine == null) {
+                screenLogLine = Instantiate(linePrefab.gameObject, linesParent).GetComponent<ScreenLogLine>();
+                lines[currentIndex] = screenLogLine;
+            }
+            screenLogLine.transform.SetAsLastSibling();
+            screenLogLine.Set(logMessage, logType);
         });
     }
 
-    protected void Update() {
-        if (Input.GetKeyDown(KeyCode.Space)) {
-            visible = !visible;
-            foreach (var line in lines) {
-                if (line == null) {
-                    continue;
-                }
-
-                line.gameObject.SetActive(visible);
-            }
-        }
+    public void ToggleVisibility() {
+        visible = !visible;
+        screenLogRootParent.SetActive(visible);
     }
 }

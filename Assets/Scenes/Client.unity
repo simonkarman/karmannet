@@ -436,6 +436,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: db78f068aa93d854da6ebf15e23f09bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  connectionString: localhost
   messageSendInternal: 10
   stayConnectedDuration: 60
 --- !u!4 &1040089227

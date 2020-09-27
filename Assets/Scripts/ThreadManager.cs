@@ -8,7 +8,7 @@ public class ThreadManager : MonoBehaviour {
     private readonly List<Action> currentActions = new List<Action>();
 
     public static void Activate() {
-        if (instance == null) {
+        if (!instance) {
             instance = new GameObject("Thread Manager").AddComponent<ThreadManager>();
         }
     }

@@ -4,7 +4,12 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Text;
 using UnityEngine;
-using System.Linq;
+
+public enum AsynchronousClientStatus {
+    NEW,
+    CONNECTED,
+    DISCONNECTED,
+}
 
 public class AsynchronousClient {
     public static readonly int DEFAULT_PORT = 14641;
@@ -18,18 +23,13 @@ public class AsynchronousClient {
     private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
     private byte[] buffer = new byte[BUFFER_SIZE];
 
-    private readonly float realtimeSinceStartupAtMomentOfConnectionEstablished;
+    private float realtimeSinceStartupAtMomentOfConnectionEstablished;
     public float RealtimeSinceConnectionEstablished {
         get {
             return Time.realtimeSinceStartup - realtimeSinceStartupAtMomentOfConnectionEstablished;
         }
     }
-
-    public bool Connected {
-        get {
-            return socket.Connected;
-        }
-    }
+    public AsynchronousClientStatus Status { get; private set; } = AsynchronousClientStatus.NEW;
 
     private static IPEndPoint ParseConnectionString(string connectionString) {
         try {
@@ -48,27 +48,37 @@ public class AsynchronousClient {
     }
 
     public AsynchronousClient(string connectionString, string username, Action<string> MessageCallback) {
+        Debug.Log(string.Format("Start of setting up connection to {0} as {1}", connectionString, username));
         serverEndpoint = ParseConnectionString(connectionString);
         this.username = username;
         this.MessageCallback = MessageCallback;
-
-        Debug.Log(string.Format("Connecting to server at {0} as {1}", serverEndpoint, username));
         socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        socket.BeginConnect(serverEndpoint, new AsyncCallback(ConnectCallback), null);
 
-        connectDone.WaitOne();
+        var connectingThread = new Thread(() => {
+            Debug.Log(string.Format("Connecting to server at {0}", serverEndpoint));
+            socket.BeginConnect(serverEndpoint, new AsyncCallback(ConnectCallback), null);
 
-        if (socket.Connected) {
-            Debug.Log("Succesfully connected to the server");
-            realtimeSinceStartupAtMomentOfConnectionEstablished = Time.realtimeSinceStartup;
-            BeginReceive(new StringBuilder());
-        } else {
-            Debug.LogWarning("Failed to connect to the server");
-        }
+            connectDone.WaitOne();
+
+            if (socket.Connected) {
+                Debug.Log("Succesfully connected to the server");
+                Status = AsynchronousClientStatus.CONNECTED;
+                realtimeSinceStartupAtMomentOfConnectionEstablished = Time.realtimeSinceStartup;
+                BeginReceive(new StringBuilder());
+            } else {
+                Debug.LogWarning("Failed to connect to the server");
+                Status = AsynchronousClientStatus.DISCONNECTED;
+            }
+        });
+        connectingThread.Start();
     }
 
     private void ConnectCallback(IAsyncResult ar) {
         try {
+            if (Status != AsynchronousClientStatus.NEW) {
+                Debug.LogError("Client cannot handle connect callback when it is not new");
+                return;
+            }
             socket.EndConnect(ar);
         } catch (Exception e) {
             Debug.LogError(e.ToString());
@@ -78,12 +88,22 @@ public class AsynchronousClient {
     }
 
     public void Send(string message) {
+        if (Status != AsynchronousClientStatus.CONNECTED) {
+            Debug.LogError("Client cannot send when it is not connected");
+            return;
+        }
+
         Debug.Log(string.Format("Sending message to the server: {0}", message));
         byte[] bytes = Encoding.ASCII.GetBytes(string.Format("{0}{1}", message, MESSAGE_SEPARATOR));
         socket.BeginSend(bytes, 0, bytes.Length, 0, new AsyncCallback(SendCallback), null);
     }
 
     private void SendCallback(IAsyncResult ar) {
+        if (Status != AsynchronousClientStatus.CONNECTED) {
+            Debug.LogError("Client cannot handle send callback when it is not connected");
+            return;
+        }
+
         try {
             int bytesSent = socket.EndSend(ar);
             Debug.Log(string.Format("Successfully sent {0} byte(s) to the server.", bytesSent));
@@ -93,10 +113,20 @@ public class AsynchronousClient {
     }
 
     private void BeginReceive(StringBuilder messageBuilder) {
+        if (Status != AsynchronousClientStatus.CONNECTED) {
+            Debug.LogError("Client cannot begin receive when it is not connected");
+            return;
+        }
+
         socket.BeginReceive(buffer, 0, buffer.Length, 0, new AsyncCallback(ReceiveCallback), messageBuilder);
     }
 
     private void ReceiveCallback(IAsyncResult ar) {
+        if (Status != AsynchronousClientStatus.CONNECTED) {
+            Debug.LogError("Client cannot handle receive callback when it is not connected");
+            return;
+        }
+
         try {
             StringBuilder messageBuilder = (StringBuilder)ar.AsyncState;
             int bytesRead = socket.EndReceive(ar);
@@ -104,10 +134,12 @@ public class AsynchronousClient {
             if (bytesRead > 0) {
                 string messagePart = Encoding.ASCII.GetString(buffer, 0, bytesRead);
                 Debug.Log(string.Format("Received part of a message from the server: {0}", messagePart));
+                messageBuilder.Append(messagePart);
                 BeginReceive(messageBuilder);
             } else {
                 Debug.Log(string.Format("Full message received: {0}", messageBuilder));
-                BeginReceive(new StringBuilder());
+                MessageCallback(messageBuilder.ToString());
+                // BeginReceive(new StringBuilder());
             }
         } catch (Exception e) {
             Debug.LogError(string.Format("An error occurred in the receive callback: {0}", e.ToString()));
@@ -115,9 +147,15 @@ public class AsynchronousClient {
     }
 
     public void Disconnect() {
+        if (Status != AsynchronousClientStatus.CONNECTED) {
+            Debug.LogError("Client cannot disconnect when it is not connected");
+            return;
+        }
+
         Debug.Log("Disconnecting from server");
         socket.Shutdown(SocketShutdown.Both);
         socket.Close();
+        Status = AsynchronousClientStatus.DISCONNECTED;
         Debug.Log("Successfully disconnected from the server");
     }
 }
