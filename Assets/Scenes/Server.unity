@@ -382,7 +382,7 @@ GameObject:
   - component: {fileID: 1040089227}
   - component: {fileID: 1040089226}
   m_Layer: 0
-  m_Name: Server
+  m_Name: ServerFlow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -397,9 +397,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 1040089225}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 27351228acd029245af766e22d9a1f57, type: 3}
+  m_Script: {fileID: 11500000, guid: cbaba9c1dc322174bb840a1c32c53bb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  lifespanNotificationInterval: 10
+  lifespan: 120
+  lifespanServerWarningThreshold: 60
 --- !u!4 &1040089227
 Transform:
   m_ObjectHideFlags: 0
@@ -421,6 +424,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 776582016}
     m_Modifications:
+    - target: {fileID: 2462089788293448821, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2462089788293448821, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8175664198724882265, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

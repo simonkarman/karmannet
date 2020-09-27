@@ -7,6 +7,7 @@ public class ScreenLogLine : MonoBehaviour {
     [SerializeField]
     private float openSizeScale = 2f;
 
+    private static readonly Color orange = Color.Lerp(Color.red, Color.yellow, 0.3f);
     private RectTransform rectTransform;
     private bool open = true;
     private Vector2 initialSizeDelta;
@@ -39,7 +40,7 @@ public class ScreenLogLine : MonoBehaviour {
         case LogType.Error:
             return Color.red;
         case LogType.Warning:
-            return Color.magenta;
+            return orange;
         case LogType.Assert:
         case LogType.Exception:
         default:

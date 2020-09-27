@@ -46,11 +46,11 @@ public class AsynchronousClient {
         }
     }
 
-    public AsynchronousClient(string connectionString, Action<byte[]> PacketCallback) {
+    public AsynchronousClient(string connectionString, Action<byte[]> OnFrameReceived) {
         Debug.Log(string.Format("Start of setting up connection to {0}", connectionString));
         ThreadManager.Activate();
         serverEndpoint = ParseConnectionString(connectionString);
-        byteFramer = new ByteFramer(MAX_FRAME_SIZE, PacketCallback);
+        byteFramer = new ByteFramer(MAX_FRAME_SIZE, OnFrameReceived);
         socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
         var connectingThread = new Thread(() => {
@@ -86,6 +86,22 @@ public class AsynchronousClient {
         } finally {
             connectDone.Set();
         }
+    }
+
+    public void Disconnect() {
+        if (Status != AsynchronousClientStatus.CONNECTED) {
+            Debug.LogError("Client cannot disconnect when it is not connected");
+            return;
+        }
+        if (!socket.Connected) {
+            Status = AsynchronousClientStatus.DISCONNECTED;
+            return;
+        }
+        Debug.Log("Disconnecting from server");
+        Status = AsynchronousClientStatus.DISCONNECTED;
+        socket.Shutdown(SocketShutdown.Both);
+        socket.Close();
+        Debug.Log("Successfully disconnected from the server");
     }
 
     public void Send(byte[] bytes) {
@@ -145,25 +161,14 @@ public class AsynchronousClient {
             }
 
             Debug.Log(string.Format("Received {0} bytes from the server.", bytesRead));
-            byteFramer.Append(receiveBuffer);
+            byte[] bytes = new byte[bytesRead];
+            Buffer.BlockCopy(receiveBuffer, 0, bytes, 0, bytesRead);
+            byteFramer.Append(bytes);
 
         } catch (Exception e) {
             Debug.LogError(string.Format("An error occurred in the receive callback: {0}", e.ToString()));
         } finally {
             receiveDone.Set();
         }
-    }
-
-    public void Disconnect() {
-        if (Status != AsynchronousClientStatus.CONNECTED) {
-            Debug.LogError("Client cannot disconnect when it is not connected");
-            return;
-        }
-
-        Debug.Log("Disconnecting from server");
-        socket.Shutdown(SocketShutdown.Both);
-        socket.Close();
-        Status = AsynchronousClientStatus.DISCONNECTED;
-        Debug.Log("Successfully disconnected from the server");
     }
 }

@@ -130,6 +130,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 485378139}
     m_Modifications:
+    - target: {fileID: 2462089788293448821, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2462089788293448821, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8175664198724882265, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -418,7 +426,7 @@ GameObject:
   - component: {fileID: 1040089227}
   - component: {fileID: 1040089226}
   m_Layer: 0
-  m_Name: Client
+  m_Name: ClientFlow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

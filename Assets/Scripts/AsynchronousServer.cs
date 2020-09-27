@@ -1,128 +1,264 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using UnityEngine;
+using System.Linq;
 
-// State object for reading client data asynchronously
-public class ServerStateObject {
-    // Size of receive buffer.
-    public const int BufferSize = 1024;
-    // Receive buffer.
-    public byte[] buffer = new byte[BufferSize];
-    // Received data string.
-    public StringBuilder sb = new StringBuilder();
-    // Client socket.
-    public Socket workSocket = null;
+public enum ConnectionStatus {
+    CONNECTED,
+    DISCONNECTED
 }
 
-public class AsynchronousServer : MonoBehaviour {
-    private Thread thread;
+public enum AsynchronousServerStatus {
+    RUNNING,
+    SHUTDOWN
+}
 
-    protected void Start() {
-        thread = new Thread(() => StartServer());
+public class AsynchronousServer {
+
+    public class Connection {
+        private readonly AsynchronousServer server;
+        public readonly Guid connectionId;
+        public readonly Socket socket;
+        public readonly ByteFramer byteFramer;
+
+        private readonly ManualResetEvent receiveDone = new ManualResetEvent(false);
+        private byte[] receiveBuffer = new byte[RECEIVING_BUFFER_SIZE];
+
+        public ConnectionStatus Status { get; private set; } = ConnectionStatus.CONNECTED;
+
+        private float connectionEstablishedTimestamp;
+        public float RealtimeSinceConnectionEstablished {
+            get {
+                return Time.realtimeSinceStartup - connectionEstablishedTimestamp;
+            }
+        }
+
+        public Connection(AsynchronousServer server, Guid connectionId, Socket socket) {
+            this.server = server;
+            this.connectionId = connectionId;
+            this.socket = socket;
+
+            byteFramer = new ByteFramer(MAX_FRAME_SIZE, (byte[] bytes) => {
+                server.OnFrameReceived(connectionId, bytes);
+            });
+
+            ThreadManager.ExecuteOnMainThread(() => {
+                connectionEstablishedTimestamp = Time.realtimeSinceStartup;
+            });
+            server.OnConnected(connectionId);
+
+            new Thread(InitiateReceiveLoop).Start();
+        }
+
+        public void Disconnect() {
+            if (Status == ConnectionStatus.DISCONNECTED) {
+                Debug.LogError(string.Format("Server cannot disconnect connection {0} when it has already been disconnected", connectionId));
+                return;
+            }
+            Debug.Log(string.Format("Disconnecting connection {0}", connectionId));
+            Status = ConnectionStatus.DISCONNECTED;
+            socket.Shutdown(SocketShutdown.Both);
+            socket.Close();
+            server.OnDisconnected(connectionId);
+            Debug.Log(string.Format("Successfully disconnected {0}", connectionId));
+        }
+
+
+        public void Send(byte[] bytes) {
+            if (Status == ConnectionStatus.DISCONNECTED) {
+                Debug.LogError(string.Format("Connection {0} cannot send when it is disconnected", connectionId));
+                return;
+            }
+
+            byte[] frame = byteFramer.Frame(bytes);
+            Debug.Log(string.Format(
+                "Sending a frame of {0} byte(s) to connection {1}: {2}{3}",
+                frame.Length,
+                connectionId,
+                BitConverter.ToString(frame, 0, Math.Min(16, frame.Length)),
+                frame.Length > 16 ? "-.." : string.Empty
+            ));
+
+            socket.BeginSend(frame, 0, frame.Length, 0, new AsyncCallback(SendCallback), null);
+        }
+
+        private void SendCallback(IAsyncResult ar) {
+            if (Status == ConnectionStatus.DISCONNECTED) {
+                Debug.LogError(string.Format("Connection {0} cannot handle a send callback when it is disconnected", connectionId));
+                return;
+            }
+
+            try {
+                int bytesSent = socket.EndSend(ar);
+                Debug.Log(string.Format("Successfully sent {0} byte(s) to the connection {1}.", bytesSent, connectionId));
+            } catch (Exception e) {
+                Debug.LogError(string.Format("An error occurred in the send callback of connection {0}: {1}", connectionId, e.ToString()));
+            }
+        }
+
+        private void InitiateReceiveLoop() {
+            Debug.Log(string.Format("Initiated receive loop, connection {0} is ready for incoming frames", connectionId));
+            while (true) {
+                receiveDone.Reset();
+                if (Status != ConnectionStatus.CONNECTED) {
+                    Debug.Log(string.Format("Breaking out of receive loop since connection {0} is no longer connected", connectionId));
+                    break;
+                }
+
+                socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, 0, new AsyncCallback(ReceiveCallback), null);
+                receiveDone.WaitOne();
+            }
+        }
+
+        private void ReceiveCallback(IAsyncResult ar) {
+            try {
+                int bytesRead = socket.Connected ? socket.EndReceive(ar) : 0;
+                if (bytesRead == 0) {
+                    if (Status == ConnectionStatus.CONNECTED) {
+                        Debug.Log(string.Format("Handling a receive callback containing 0 bytes or the socket is no longer connected, this means that connection {0} should be disconnected", connectionId));
+                        Disconnect();
+                    }
+                    return;
+                }
+
+                Debug.Log(string.Format("Received {0} bytes from connection {1}.", bytesRead, connectionId));
+                byte[] bytes = new byte[bytesRead];
+                Buffer.BlockCopy(receiveBuffer, 0, bytes, 0, bytesRead);
+                byteFramer.Append(bytes);
+
+            } catch (Exception e) {
+                Debug.LogError(string.Format("An error occurred in the receive callback of connection {0}: {1}", connectionId, e.ToString()));
+            } finally {
+                receiveDone.Set();
+            }
+        }
+    }
+
+    public const int DEFAULT_PORT = 14641;
+    public const int RECEIVING_BUFFER_SIZE = 256;
+    public const int MAX_FRAME_SIZE = 256;
+
+    private ManualResetEvent acceptDone = new ManualResetEvent(false);
+    private readonly Socket rootSocket;
+    private readonly Dictionary<Guid, Connection> connections = new Dictionary<Guid, Connection>();
+    private readonly Action<Guid> OnConnected;
+    private readonly Action<Guid> OnDisconnected;
+    private readonly Action<Guid, byte[]> OnFrameReceived;
+
+    public AsynchronousServerStatus Status { get; private set; } = AsynchronousServerStatus.RUNNING;
+
+    private float startedTimestamp;
+    public float RealtimeSinceStarted {
+        get {
+            return Time.realtimeSinceStartup - startedTimestamp;
+        }
+    }
+
+    public AsynchronousServer(Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, byte[]> OnFrameReceived):
+        this(DEFAULT_PORT, OnConnected, OnDisconnected, OnFrameReceived) {
+    }
+
+    public AsynchronousServer(int port, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, byte[]> OnFrameReceived) {
+        Debug.Log(string.Format("Start of setting up server on port {0}", port));
+        startedTimestamp = Time.realtimeSinceStartup;
+
+        IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
+        ThreadManager.Activate();
+
+        this.OnConnected = (Guid connectionId) => {
+            ThreadManager.ExecuteOnMainThread(() => {
+                OnConnected(connectionId);
+            });
+        };
+        this.OnDisconnected = (Guid connectionId) => {
+            connections.Remove(connectionId);
+            ThreadManager.ExecuteOnMainThread(() => {
+                OnDisconnected(connectionId);
+            });
+        };
+        this.OnFrameReceived = (Guid connectionId, byte[] frame) => {
+            ThreadManager.ExecuteOnMainThread(() => {
+                OnFrameReceived(connectionId, frame);
+            });
+        };
+        ;
+
+        rootSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        rootSocket.Bind(localEndPoint);
+        rootSocket.Listen(100);
+
+        var thread = new Thread(() => {
+            Debug.Log(string.Format("Server is ready for connections on {0}", localEndPoint));
+            InitiateAcceptLoop();
+        });
         thread.Start();
     }
 
-    protected void OnDestroy() {
-        thread.Abort();
-    }
-
-    public static ManualResetEvent connectionEstablished = new ManualResetEvent(false);
-    public static void StartServer() {
-        Debug.Log("Starting server");
-        IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, 14641);
-        Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        try {
-            socket.Bind(localEndPoint);
-            socket.Listen(100);
-
-            while (true) {
-                connectionEstablished.Reset();
-
-                // Start an asynchronous socket to listen for connections.
-                Debug.Log(string.Format("Waiting for a connection on {0}", localEndPoint));
-                socket.BeginAccept(new AsyncCallback(AcceptCallback), socket);
-
-                connectionEstablished.WaitOne();
+    public void InitiateAcceptLoop() {
+        while (true) {
+            acceptDone.Reset();
+            if (Status == AsynchronousServerStatus.SHUTDOWN) {
+                Debug.Log("Breaking out of accepting new connections loop since server has shutdown");
+                break;
             }
-        } catch (Exception e) {
-            Debug.LogError(e.ToString());
+
+            // TODO: When server is full, either stop accepting new connection or allow them and notify them instantly after connection was setup
+            rootSocket.BeginAccept(new AsyncCallback(AcceptCallback), null);
+
+            acceptDone.WaitOne();
         }
     }
 
-    public static void AcceptCallback(IAsyncResult ar) {
-        // Get the socket that handles the client request.
-        Socket socket = (Socket)ar.AsyncState;
-        Socket handler = socket.EndAccept(ar);
-        Debug.Log(string.Format("Accepting incoming connection from {0}", handler.RemoteEndPoint));
-        connectionEstablished.Set();
-
-        // Create the state object.
-        ServerStateObject state = new ServerStateObject();
-        state.workSocket = handler;
-        handler.BeginReceive(state.buffer, 0, ServerStateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
-    }
-
-    public static void ReceiveCallback(IAsyncResult ar) {
-        string content = string.Empty;
-
-        // Retrieve the state object and the handler socket from the asynchronous state object.
-        ServerStateObject state = (ServerStateObject)ar.AsyncState;
-        Socket handler = state.workSocket;
-        Debug.Log(string.Format("Receiving data from {0}", handler.RemoteEndPoint));
-
-        // Read data from the client socket.
-        int bytesRead = handler.EndReceive(ar);
-
-        if (bytesRead > 0) {
-            // There might be more data, so store the data received so far.
-            state.sb.Append(Encoding.ASCII.GetString(state.buffer, 0, bytesRead));
-
-            // Check for end-of-file tag. If it is not there, read more data.
-            content = state.sb.ToString();
-            if (content.IndexOf("||") > -1) {
-                // All the data has been read from the client. Display it on the console.
-                Debug.Log(string.Format("Read {0} bytes from {1}.\nData: {2}", content.Length, handler.RemoteEndPoint, content));
-                // Echo the data back to the client.
-                Send(handler, string.Format("Client said: {0}", content));
-            } else {
-                // Not all data received. Get more.
-                handler.BeginReceive(state.buffer, 0, ServerStateObject.BufferSize, 0, new AsyncCallback(ReceiveCallback), state);
+    public void AcceptCallback(IAsyncResult ar) {
+        try {
+            if (Status == AsynchronousServerStatus.SHUTDOWN) {
+                Debug.Log("Server cannot handle an accept callback after it was shutdown");
+                return;
             }
+
+            Socket socket = rootSocket.EndAccept(ar);
+            Guid connectionId = Guid.NewGuid();
+            Debug.Log(string.Format("Accepted incoming connection from {0} and assigned id {1} to the connection", socket.RemoteEndPoint, connectionId));
+            Connection connection = new Connection(this, connectionId, socket);
+            connections.Add(connectionId, connection);
+
+        } catch (Exception) {
+
+        } finally {
+            acceptDone.Set();
         }
     }
 
-    private static void Send(Socket handler, string data) {
-        Debug.Log(string.Format("Sending \"{0}\" to {1}", data, handler.RemoteEndPoint));
-
-        // Convert the string data to byte data using ASCII encoding.
-        byte[] byteData = Encoding.ASCII.GetBytes(data);
-
-        // Begin sending the data to the remote device.
-        handler.BeginSend(byteData, 0, byteData.Length, 0,
-            new AsyncCallback(SendCallback), handler);
+    public void Shutdown() {
+        if (Status == AsynchronousServerStatus.SHUTDOWN) {
+            Debug.LogError("Server cannot shutdown when it has already been shutdown");
+            return;
+        }
+        Debug.Log("Shutting down server");
+        Status = AsynchronousServerStatus.SHUTDOWN;
+        var connectionIds = connections.Keys.ToList();
+        foreach (var connectionId in connectionIds) {
+            Connection connection = connections[connectionId];
+            connection.Disconnect();
+        }
+        rootSocket.Close();
+        Debug.Log("Server shutdown completed");
     }
 
-    private static void SendCallback(IAsyncResult ar) {
-        try {
-            // Retrieve the socket from the state object.
-            Socket handler = (Socket)ar.AsyncState;
+    public void Broadcast(byte[] frame) {
+        foreach (var connection in connections.Values) {
+            connection.Send(frame);
+        }
+    }
 
-            // Complete sending the data to the remote device.
-            int bytesSent = handler.EndSend(ar);
-            Debug.Log(string.Format("Sent {0} bytes to client at {1}", bytesSent, handler.RemoteEndPoint));
-            
-            /*
-            string remoteEndpointName = handler.RemoteEndPoint.ToString();
-            handler.Shutdown(SocketShutdown.Both);
-            handler.Close();
-            Debug.Log(string.Format("Closed the connection with {0}", remoteEndpointName));
-            */
-
-        } catch (Exception e) {
-            Debug.LogError(e.ToString());
+    public void Send(Guid connectionId, byte[] frame) {
+        if (connections.TryGetValue(connectionId, out Connection connection)) {
+            connection.Send(frame);
+        } else {
+            throw new InvalidOperationException(string.Format("Cannot send a message to connection {0} because that connection does not exist", connectionId));
         }
     }
 }

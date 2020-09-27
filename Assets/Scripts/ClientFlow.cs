@@ -1,11 +1,11 @@
 ﻿using System.Text;
 using UnityEngine;
 
-public class ClientGameFlow : MonoBehaviour {
+public class ClientFlow : MonoBehaviour {
     [SerializeField]
     private string connectionString = "localhost";
     [SerializeField]
-    private float messageSendInternal = 10f;
+    private float messageSendInterval = 10f;
     [SerializeField]
     private float stayConnectedDuration = 60f;
 
@@ -21,7 +21,7 @@ public class ClientGameFlow : MonoBehaviour {
         username = string.Format("User-" + (Random.value * 10000).ToString("0000"));
         Debug.Log(string.Format("Username: {0}", username));
 
-        client = new AsynchronousClient(connectionString, PacketCallback);
+        client = new AsynchronousClient(connectionString, OnFrameReceived);
     }
 
     public void OnDestroy() {
@@ -53,8 +53,8 @@ public class ClientGameFlow : MonoBehaviour {
         }
 
         timeSinceLastMessage += Time.deltaTime;
-        if (timeSinceLastMessage >= messageSendInternal) {
-            timeSinceLastMessage -= messageSendInternal;
+        if (timeSinceLastMessage >= messageSendInterval) {
+            timeSinceLastMessage -= messageSendInterval;
             client.Send(Encoding.ASCII.GetBytes(string.Format(
                 "{0} has been around for {1} second(s).",
                 username,
@@ -67,7 +67,7 @@ public class ClientGameFlow : MonoBehaviour {
         }
     }
 
-    public void PacketCallback(byte[] packet) {
-        Debug.Log(string.Format("Client Game Flow script received: {0}", Encoding.ASCII.GetString(packet)));
+    public void OnFrameReceived(byte[] frame) {
+        Debug.Log(string.Format("Server says: {0}", Encoding.ASCII.GetString(frame)));
     }
 }
