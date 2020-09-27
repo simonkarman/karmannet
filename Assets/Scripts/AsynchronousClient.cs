@@ -13,7 +13,7 @@ public enum AsynchronousClientStatus {
 public class AsynchronousClient {
     public static readonly int DEFAULT_PORT = 14641;
     public static readonly int RECEIVING_BUFFER_SIZE = 256;
-    public static readonly int MAX_PACKET_SIZE = 256;
+    public static readonly int MAX_FRAME_SIZE = 256;
 
     public readonly IPEndPoint serverEndpoint;
     public readonly string username;
@@ -21,7 +21,7 @@ public class AsynchronousClient {
     private readonly Socket socket;
     private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
     private readonly ManualResetEvent receiveDone = new ManualResetEvent(false);
-    private readonly PacketFramer packetFramer;
+    private readonly ByteFramer byteFramer;
     private byte[] receiveBuffer = new byte[RECEIVING_BUFFER_SIZE];
 
     private float connectionEstablishedTimestamp;
@@ -54,7 +54,7 @@ public class AsynchronousClient {
         serverEndpoint = ParseConnectionString(connectionString);
         this.username = username;
         this.PacketCallback = PacketCallback;
-        packetFramer = new PacketFramer(MAX_PACKET_SIZE, PacketCallback);
+        byteFramer = new ByteFramer(MAX_FRAME_SIZE, PacketCallback);
         socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
         var connectingThread = new Thread(() => {
@@ -92,21 +92,21 @@ public class AsynchronousClient {
         }
     }
 
-    public void Send(byte[] packet) {
+    public void Send(byte[] bytes) {
         if (Status != AsynchronousClientStatus.CONNECTED) {
             Debug.LogError("Client cannot send when it is not connected");
             return;
         }
 
-        byte[] bytes = packetFramer.FramePacket(packet);
+        byte[] frame = byteFramer.Frame(bytes);
         Debug.Log(string.Format(
-            "Sending {0} byte(s) to the server with the first 16 bytes being: {1}{2}",
-            bytes.Length,
-            BitConverter.ToString(bytes, 0, Math.Min(16, bytes.Length)),
-            bytes.Length > 16 ? "-.." : string.Empty
+            "Sending a frame of {0} byte(s) to the server with the first 16 bytes being: {1}{2}",
+            frame.Length,
+            BitConverter.ToString(frame, 0, Math.Min(16, frame.Length)),
+            frame.Length > 16 ? "-.." : string.Empty
         ));
 
-        socket.BeginSend(bytes, 0, bytes.Length, 0, new AsyncCallback(SendCallback), null);
+        socket.BeginSend(frame, 0, frame.Length, 0, new AsyncCallback(SendCallback), null);
     }
 
     private void SendCallback(IAsyncResult ar) {
@@ -124,7 +124,7 @@ public class AsynchronousClient {
     }
 
     private void InitiateReceiveLoop() {
-        Debug.Log("Initiated receive loop, client is ready for incoming packets from the server");
+        Debug.Log("Initiated receive loop, client is ready for incoming frames from the server");
         while (true) {
             receiveDone.Reset();
             if (Status != AsynchronousClientStatus.CONNECTED) {
@@ -142,14 +142,14 @@ public class AsynchronousClient {
             int bytesRead = socket.Connected ? socket.EndReceive(ar) : 0;
             if (bytesRead == 0) {
                 if (Status == AsynchronousClientStatus.CONNECTED) {
-                    Debug.Log("Received an empty packet from the server or the socket is no longer connected, this means the connection has closed");
+                    Debug.Log("Handling a receive callback containing 0 bytes or the socket is no longer connected, this means the connection should be disconnected");
                     Disconnect();
                 }
                 return;
             }
 
             Debug.Log(string.Format("Received {0} bytes from the server.", bytesRead));
-            packetFramer.Append(receiveBuffer);
+            byteFramer.Append(receiveBuffer);
 
         } catch (Exception e) {
             Debug.LogError(string.Format("An error occurred in the receive callback: {0}", e.ToString()));
