@@ -19,11 +19,15 @@ public class ClientGameFlow : MonoBehaviour {
         Debug.Log(string.Format("Build id: {0}", buildId));
 
         username = string.Format("User-" + (Random.value * 10000).ToString("0000"));
-        client = new AsynchronousClient(connectionString, username, PacketCallback);
+        Debug.Log(string.Format("Username: {0}", username));
+
+        client = new AsynchronousClient(connectionString, PacketCallback);
     }
 
     public void OnDestroy() {
-        client.Disconnect();
+        if (client.Status == AsynchronousClientStatus.CONNECTED) {
+            client.Disconnect();
+        }
     }
 
     public void Update() {
@@ -34,11 +38,11 @@ public class ClientGameFlow : MonoBehaviour {
         }
 
         if (client.Status == AsynchronousClientStatus.CONNECTED) {
-            //DoConnectedLogic();
+            UpdateWhenConnected();
         }
     }
 
-    private void DoConnectedLogic() {
+    private void UpdateWhenConnected() {
         if (!welcomeMessageSend) {
             welcomeMessageSend = true;
             client.Send(Encoding.ASCII.GetBytes(string.Format(
@@ -48,18 +52,18 @@ public class ClientGameFlow : MonoBehaviour {
             client.Send(Encoding.ASCII.GetBytes("Hi."));
         }
 
-        if (client.RealtimeSinceConnectionEstablished > stayConnectedDuration) {
-            client.Disconnect();
-        }
-
         timeSinceLastMessage += Time.deltaTime;
         if (timeSinceLastMessage >= messageSendInternal) {
             timeSinceLastMessage -= messageSendInternal;
             client.Send(Encoding.ASCII.GetBytes(string.Format(
                 "{0} has been around for {1} second(s).",
-                client.username,
+                username,
                 client.RealtimeSinceConnectionEstablished
             )));
+        }
+
+        if (client.RealtimeSinceConnectionEstablished > stayConnectedDuration) {
+            client.Disconnect();
         }
     }
 

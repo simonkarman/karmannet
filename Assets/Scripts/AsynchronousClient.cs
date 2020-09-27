@@ -16,8 +16,6 @@ public class AsynchronousClient {
     public static readonly int MAX_FRAME_SIZE = 256;
 
     public readonly IPEndPoint serverEndpoint;
-    public readonly string username;
-    private readonly Action<byte[]> PacketCallback;
     private readonly Socket socket;
     private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
     private readonly ManualResetEvent receiveDone = new ManualResetEvent(false);
@@ -48,12 +46,10 @@ public class AsynchronousClient {
         }
     }
 
-    public AsynchronousClient(string connectionString, string username, Action<byte[]> PacketCallback) {
-        Debug.Log(string.Format("Start of setting up connection to {0} as {1}", connectionString, username));
+    public AsynchronousClient(string connectionString, Action<byte[]> PacketCallback) {
+        Debug.Log(string.Format("Start of setting up connection to {0}", connectionString));
         ThreadManager.Activate();
         serverEndpoint = ParseConnectionString(connectionString);
-        this.username = username;
-        this.PacketCallback = PacketCallback;
         byteFramer = new ByteFramer(MAX_FRAME_SIZE, PacketCallback);
         socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -100,7 +96,7 @@ public class AsynchronousClient {
 
         byte[] frame = byteFramer.Frame(bytes);
         Debug.Log(string.Format(
-            "Sending a frame of {0} byte(s) to the server with the first 16 bytes being: {1}{2}",
+            "Sending a frame of {0} byte(s) to the server: {1}{2}",
             frame.Length,
             BitConverter.ToString(frame, 0, Math.Min(16, frame.Length)),
             frame.Length > 16 ? "-.." : string.Empty
