@@ -9,11 +9,12 @@ using System.Linq;
 namespace Networking {
     public class MultiplayerServer {
 
-        public class Connection {
+        public class Connection : IConnection {
             private readonly MultiplayerServer server;
             public readonly Guid connectionId;
-            public readonly Socket socket;
-            public readonly ByteFramer byteFramer;
+            private readonly Socket socket;
+            private readonly ByteFramer byteFramer;
+            private readonly ByteSender byteSender;
 
             private readonly ManualResetEvent receiveDone = new ManualResetEvent(false);
             private byte[] receiveBuffer = new byte[RECEIVING_BUFFER_SIZE];
@@ -27,6 +28,18 @@ namespace Networking {
                 }
             }
 
+            public Socket GetSocket() {
+                return socket;
+            }
+
+            public string GetIdentifier() {
+                return string.Format("client-{0}", connectionId.ToString());
+            }
+
+            public bool IsConnected() {
+                return Status == ConnectionStatus.CONNECTED;
+            }
+
             public Connection(MultiplayerServer server, Guid connectionId, Socket socket) {
                 this.server = server;
                 this.connectionId = connectionId;
@@ -35,6 +48,8 @@ namespace Networking {
                 byteFramer = new ByteFramer(MAX_FRAME_SIZE, (byte[] bytes) => {
                     server.OnFrameReceived(connectionId, bytes);
                 });
+
+                byteSender = new ByteSender(this);
 
                 ThreadManager.ExecuteOnMainThread(() => {
                     connectionEstablishedTimestamp = Time.realtimeSinceStartup;
@@ -57,37 +72,9 @@ namespace Networking {
                 Debug.Log(string.Format("Successfully disconnected {0}", connectionId));
             }
 
-
-            public void Send(byte[] bytes) {
-                if (Status == ConnectionStatus.DISCONNECTED) {
-                    Debug.LogError(string.Format("Connection {0} cannot send when it is disconnected", connectionId));
-                    return;
-                }
-
-                byte[] frame = byteFramer.Frame(bytes);
-                Debug.Log(string.Format(
-                    "Sending a frame of {0} byte(s) to connection {1}: {2}{3}",
-                    frame.Length,
-                    connectionId,
-                    BitConverter.ToString(frame, 0, Math.Min(16, frame.Length)),
-                    frame.Length > 16 ? "-.." : string.Empty
-                ));
-
-                socket.BeginSend(frame, 0, frame.Length, 0, new AsyncCallback(SendCallback), null);
-            }
-
-            private void SendCallback(IAsyncResult ar) {
-                if (Status == ConnectionStatus.DISCONNECTED) {
-                    Debug.LogError(string.Format("Connection {0} cannot handle a send callback when it is disconnected", connectionId));
-                    return;
-                }
-
-                try {
-                    int bytesSent = socket.EndSend(ar);
-                    Debug.Log(string.Format("Successfully sent {0} byte(s) to the connection {1}.", bytesSent, connectionId));
-                } catch (Exception e) {
-                    Debug.LogError(string.Format("An error occurred in the send callback of connection {0}: {1}", connectionId, e.ToString()));
-                }
+            public void Send(byte[] data) {
+                byte[] frame = byteFramer.Frame(data);
+                byteSender.Send(frame);
             }
 
             private void InitiateReceiveLoop() {

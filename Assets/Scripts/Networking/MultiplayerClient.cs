@@ -30,7 +30,7 @@ namespace Networking {
         }
 
         public string GetIdentifier() {
-            return "Connection from Client to Server";
+            return "server";
         }
 
         public bool IsConnected() {

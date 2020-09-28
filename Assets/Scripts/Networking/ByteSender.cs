@@ -12,11 +12,11 @@ namespace Networking {
 
         public void Send(byte[] frame) {
             if (!connection.IsConnected()) {
-                throw new InvalidOperationException(string.Format("{0} cannot sent when it is not connected", connection.GetIdentifier()));
+                throw new InvalidOperationException(string.Format("Connection with {0} cannot sent when it is not connected", connection.GetIdentifier()));
             }
 
             Debug.Log(string.Format(
-                "{0} is sending a frame of {1} byte(s): {2}{3}",
+                "Connection with {0} is sending a frame of {1} byte(s): {2}{3}",
                 connection.GetIdentifier(),
                 frame.Length,
                 BitConverter.ToString(frame, 0, Math.Min(16, frame.Length)),
@@ -27,12 +27,12 @@ namespace Networking {
 
         private void SendCallback(IAsyncResult ar) {
             if (!connection.IsConnected()) {
-                Debug.LogError(string.Format("{0} cannot handle a send callback when it is not connected", connection.GetIdentifier()));
+                Debug.LogError(string.Format("Connection with {0} cannot handle a send callback when it is not connected", connection.GetIdentifier()));
                 return;
             }
 
             int bytesSent = connection.GetSocket().EndSend(ar);
-            Debug.Log(string.Format("{0} successfully sent {1} byte(s).", connection.GetIdentifier(), bytesSent));
+            Debug.Log(string.Format("Connection with {0} successfully sent {1} byte(s).", connection.GetIdentifier(), bytesSent));
         }
     }
 }
