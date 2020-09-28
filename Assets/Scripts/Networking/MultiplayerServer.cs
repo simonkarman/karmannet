@@ -10,14 +10,13 @@ namespace Networking {
     public class MultiplayerServer {
 
         public class Connection : IConnection {
+            public const int MAX_FRAME_SIZE = 256;
+
             private readonly MultiplayerServer server;
             public readonly Guid connectionId;
             private readonly Socket socket;
             private readonly ByteFramer byteFramer;
             private readonly ByteSender byteSender;
-
-            private readonly ManualResetEvent receiveDone = new ManualResetEvent(false);
-            private byte[] receiveBuffer = new byte[RECEIVING_BUFFER_SIZE];
 
             public ConnectionStatus Status { get; private set; } = ConnectionStatus.CONNECTED;
 
@@ -32,7 +31,7 @@ namespace Networking {
                 return socket;
             }
 
-            public string GetIdentifier() {
+            public string GetConnectedWithIdentifier() {
                 return string.Format("client-{0}", connectionId.ToString());
             }
 
@@ -49,74 +48,35 @@ namespace Networking {
                     server.OnFrameReceived(connectionId, bytes);
                 });
 
+                new ByteReceiver(this, (bytes) => {
+                    byteFramer.Append(bytes);
+                });
+
                 byteSender = new ByteSender(this);
 
                 ThreadManager.ExecuteOnMainThread(() => {
                     connectionEstablishedTimestamp = Time.realtimeSinceStartup;
                 });
-                server.OnConnected(connectionId);
-
-                new Thread(InitiateReceiveLoop).Start();
             }
 
             public void Disconnect() {
                 if (Status == ConnectionStatus.DISCONNECTED) {
-                    Debug.LogError(string.Format("Server cannot disconnect connection {0} when it has already been disconnected", connectionId));
+                    Debug.LogError(string.Format("Server cannot disconnect connection with client-{0} when it has already been disconnected", connectionId));
                     return;
                 }
-                Debug.Log(string.Format("Disconnecting connection {0}", connectionId));
+                Debug.Log(string.Format("Disconnecting connection with client-{0}", connectionId));
                 Status = ConnectionStatus.DISCONNECTED;
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
                 server.OnDisconnected(connectionId);
-                Debug.Log(string.Format("Successfully disconnected {0}", connectionId));
+                Debug.Log(string.Format("Successfully disconnected from client-{0}", connectionId));
             }
 
             public void Send(byte[] data) {
                 byte[] frame = byteFramer.Frame(data);
                 byteSender.Send(frame);
             }
-
-            private void InitiateReceiveLoop() {
-                Debug.Log(string.Format("Initiated receive loop, connection {0} is ready for incoming frames", connectionId));
-                while (true) {
-                    receiveDone.Reset();
-                    if (Status != ConnectionStatus.CONNECTED) {
-                        Debug.Log(string.Format("Breaking out of receive loop since connection {0} is no longer connected", connectionId));
-                        break;
-                    }
-
-                    socket.BeginReceive(receiveBuffer, 0, receiveBuffer.Length, 0, new AsyncCallback(ReceiveCallback), null);
-                    receiveDone.WaitOne();
-                }
-            }
-
-            private void ReceiveCallback(IAsyncResult ar) {
-                try {
-                    int bytesRead = socket.Connected ? socket.EndReceive(ar) : 0;
-                    if (bytesRead == 0) {
-                        if (Status == ConnectionStatus.CONNECTED) {
-                            Debug.Log(string.Format("Handling a receive callback containing 0 bytes or the socket is no longer connected, this means that connection {0} should be disconnected", connectionId));
-                            Disconnect();
-                        }
-                        return;
-                    }
-
-                    Debug.Log(string.Format("Received {0} bytes from connection {1}.", bytesRead, connectionId));
-                    byte[] bytes = new byte[bytesRead];
-                    Buffer.BlockCopy(receiveBuffer, 0, bytes, 0, bytesRead);
-                    byteFramer.Append(bytes);
-
-                } catch (Exception e) {
-                    Debug.LogError(string.Format("An error occurred in the receive callback of connection {0}: {1}", connectionId, e.ToString()));
-                } finally {
-                    receiveDone.Set();
-                }
-            }
         }
-
-        public const int RECEIVING_BUFFER_SIZE = 256;
-        public const int MAX_FRAME_SIZE = 256;
 
         private ManualResetEvent acceptDone = new ManualResetEvent(false);
         private readonly Socket rootSocket;
@@ -197,6 +157,7 @@ namespace Networking {
                 Debug.Log(string.Format("Accepted incoming connection from {0} and assigned id {1} to the connection", socket.RemoteEndPoint, connectionId));
                 Connection connection = new Connection(this, connectionId, socket);
                 connections.Add(connectionId, connection);
+                OnConnected(connectionId);
 
             } catch (Exception) {
 

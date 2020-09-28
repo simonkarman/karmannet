@@ -3,7 +3,8 @@
 namespace Networking {
     public interface IConnection {
         Socket GetSocket();
-        string GetIdentifier();
+        string GetConnectedWithIdentifier();
         bool IsConnected();
+        void Disconnect();
     }
 }
