@@ -6,6 +6,6 @@ This project serves as a reference implementation of a multiplayer game in the U
 
 ## Reference articles
 
-- [Socket in C#](https://docs.microsoft.com/en-us/dotnet/framework/network-programming/sockets) in Microsoft Documentation
+- [Sockets in C#](https://docs.microsoft.com/en-us/dotnet/framework/network-programming/sockets) in Microsoft Documentation
 - [Message Framing](https://blog.stephencleary.com/2009/04/message-framing.html) by Stephen Cleary
 - [Length Prefixed Message Framing](https://blog.stephencleary.com/2009/04/sample-code-length-prefix-message.html) by Stephen Cleary

@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using UnityEngine;
+using Networking;
 
 public class ClientFlow : MonoBehaviour {
     [SerializeField]
@@ -9,7 +10,7 @@ public class ClientFlow : MonoBehaviour {
     [SerializeField]
     private float stayConnectedDuration = 60f;
 
-    private AsynchronousClient client = null;
+    private MultiplayerClient client = null;
     private float timeSinceLastMessage = 0f;
     private bool welcomeMessageSend = false;
     private string username;
@@ -21,11 +22,11 @@ public class ClientFlow : MonoBehaviour {
         username = string.Format("User-" + (Random.value * 10000).ToString("0000"));
         Debug.Log(string.Format("Username: {0}", username));
 
-        client = new AsynchronousClient(connectionString, OnFrameReceived);
+        client = new MultiplayerClient(connectionString, OnFrameReceived);
     }
 
     public void OnDestroy() {
-        if (client.Status == AsynchronousClientStatus.CONNECTED) {
+        if (client.Status == ConnectionStatus.CONNECTED) {
             client.Disconnect();
         }
     }
@@ -37,7 +38,7 @@ public class ClientFlow : MonoBehaviour {
             }
         }
 
-        if (client.Status == AsynchronousClientStatus.CONNECTED) {
+        if (client.Status == ConnectionStatus.CONNECTED) {
             UpdateWhenConnected();
         }
     }

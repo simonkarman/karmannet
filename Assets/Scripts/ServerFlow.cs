@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using UnityEngine;
+using Networking;
 
 public class ServerFlow : MonoBehaviour {
     [SerializeField]
@@ -11,10 +12,10 @@ public class ServerFlow : MonoBehaviour {
     private float lifespanServerWarningThreshold = 60f;
 
     private float timeSinceLastLifespanNotification;
-    private AsynchronousServer server;
+    private MultiplayerServer server;
 
     protected void Start() {
-        server = new AsynchronousServer(OnConnected, OnDisconnected, OnFrameReceived);
+        server = new MultiplayerServer(OnConnected, OnDisconnected, OnFrameReceived);
     }
 
     public void OnConnected(Guid connectionId) {
@@ -31,7 +32,7 @@ public class ServerFlow : MonoBehaviour {
     }
 
     protected void Update() {
-        if (server.Status == AsynchronousServerStatus.SHUTDOWN) {
+        if (server.Status == ServerStatus.SHUTDOWN) {
             return;
         }
 
@@ -52,7 +53,7 @@ public class ServerFlow : MonoBehaviour {
     }
 
     protected void OnDestroy() {
-        if (server.Status == AsynchronousServerStatus.RUNNING) {
+        if (server.Status == ServerStatus.RUNNING) {
             server.Shutdown();
         }
     }
