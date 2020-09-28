@@ -22,7 +22,7 @@ public class ClientFlow : MonoBehaviour {
         username = string.Format("User-" + (Random.value * 10000).ToString("0000"));
         Debug.Log(string.Format("Username: {0}", username));
 
-        client = new MultiplayerClient(connectionString, OnFrameReceived);
+        client = new MultiplayerClient(ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_PORT), OnFrameReceived);
     }
 
     public void OnDestroy() {

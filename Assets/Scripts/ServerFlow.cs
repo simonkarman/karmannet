@@ -4,6 +4,8 @@ using UnityEngine;
 using Networking;
 
 public class ServerFlow : MonoBehaviour {
+    public const int DEFAULT_PORT = 14641;
+
     [SerializeField]
     private float lifespanNotificationInterval = 10f;
     [SerializeField]
@@ -15,7 +17,7 @@ public class ServerFlow : MonoBehaviour {
     private MultiplayerServer server;
 
     protected void Start() {
-        server = new MultiplayerServer(OnConnected, OnDisconnected, OnFrameReceived);
+        server = new MultiplayerServer(DEFAULT_PORT, OnConnected, OnDisconnected, OnFrameReceived);
     }
 
     public void OnConnected(Guid connectionId) {

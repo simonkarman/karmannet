@@ -5,7 +5,7 @@ using System.Threading;
 using UnityEngine;
 
 namespace Networking {
-    public class MultiplayerClient {
+    public class MultiplayerClient : IConnection {
         public static readonly int RECEIVING_BUFFER_SIZE = 256;
         public static readonly int MAX_FRAME_SIZE = 256;
 
@@ -14,6 +14,7 @@ namespace Networking {
         private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
         private readonly ManualResetEvent receiveDone = new ManualResetEvent(false);
         private readonly ByteFramer byteFramer;
+        private readonly ByteSender byteSender;
         private byte[] receiveBuffer = new byte[RECEIVING_BUFFER_SIZE];
 
         private float connectionEstablishedTimestamp;
@@ -24,28 +25,24 @@ namespace Networking {
         }
         public ConnectionStatus Status { get; private set; } = ConnectionStatus.NEW;
 
-        private static IPEndPoint ParseConnectionString(string connectionString) {
-            try {
-                string[] parts = connectionString.Split(':');
-                if (parts[0] == "localhost") {
-                    parts[0] = "127.0.0.1";
-                }
-                if (!IPAddress.TryParse(parts[0], out IPAddress serverIpAddress)) {
-                    serverIpAddress = Dns.GetHostEntry(parts[0]).AddressList[0];
-                }
-                int port = parts.Length == 1 ? MultiplayerServer.DEFAULT_PORT : int.Parse(parts[1]);
-                return new IPEndPoint(serverIpAddress, port);
-            } catch (Exception) {
-                throw new InvalidOperationException("Invalid connection string provided");
-            }
+        public Socket GetSocket() {
+            return socket;
         }
 
-        public MultiplayerClient(string connectionString, Action<byte[]> OnFrameReceived) {
-            Debug.Log(string.Format("Start of setting up connection to {0}", connectionString));
+        public string GetIdentifier() {
+            return "Connection from Client to Server";
+        }
+
+        public bool IsConnected() {
+            return Status == ConnectionStatus.CONNECTED;
+        }
+
+        public MultiplayerClient(IPEndPoint serverEndpoint, Action<byte[]> OnFrameReceived) {
+            Debug.Log(string.Format("Start of setting up connection to {0}", serverEndpoint));
             ThreadManager.Activate();
-            serverEndpoint = ParseConnectionString(connectionString);
-            byteFramer = new ByteFramer(MAX_FRAME_SIZE, OnFrameReceived);
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            byteFramer = new ByteFramer(MAX_FRAME_SIZE, OnFrameReceived);
+            byteSender = new ByteSender(this);
 
             var connectingThread = new Thread(() => {
                 Debug.Log(string.Format("Connecting to server at {0}", serverEndpoint));
@@ -82,6 +79,11 @@ namespace Networking {
             }
         }
 
+        public void Send(byte[] data) {
+            byte[] frame = byteFramer.Frame(data);
+            byteSender.Send(frame);
+        }
+
         public void Disconnect() {
             if (Status != ConnectionStatus.CONNECTED) {
                 Debug.LogError("Client cannot disconnect when it is not connected");
@@ -96,37 +98,6 @@ namespace Networking {
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();
             Debug.Log("Successfully disconnected from the server");
-        }
-
-        public void Send(byte[] bytes) {
-            if (Status != ConnectionStatus.CONNECTED) {
-                Debug.LogError("Client cannot send when it is not connected");
-                return;
-            }
-
-            byte[] frame = byteFramer.Frame(bytes);
-            Debug.Log(string.Format(
-                "Sending a frame of {0} byte(s) to the server: {1}{2}",
-                frame.Length,
-                BitConverter.ToString(frame, 0, Math.Min(16, frame.Length)),
-                frame.Length > 16 ? "-.." : string.Empty
-            ));
-
-            socket.BeginSend(frame, 0, frame.Length, 0, new AsyncCallback(SendCallback), null);
-        }
-
-        private void SendCallback(IAsyncResult ar) {
-            if (Status != ConnectionStatus.CONNECTED) {
-                Debug.LogError("Client cannot handle a send callback when it is not connected");
-                return;
-            }
-
-            try {
-                int bytesSent = socket.EndSend(ar);
-                Debug.Log(string.Format("Successfully sent {0} byte(s) to the server.", bytesSent));
-            } catch (Exception e) {
-                Debug.LogError(string.Format("An error occurred in the send callback: {0}", e.ToString()));
-            }
         }
 
         private void InitiateReceiveLoop() {

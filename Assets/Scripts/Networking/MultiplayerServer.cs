@@ -6,7 +6,6 @@ using System.Threading;
 using UnityEngine;
 using System.Linq;
 
-
 namespace Networking {
     public class MultiplayerServer {
 
@@ -129,7 +128,6 @@ namespace Networking {
             }
         }
 
-        public const int DEFAULT_PORT = 14641;
         public const int RECEIVING_BUFFER_SIZE = 256;
         public const int MAX_FRAME_SIZE = 256;
 
@@ -147,10 +145,6 @@ namespace Networking {
             get {
                 return Time.realtimeSinceStartup - startedTimestamp;
             }
-        }
-
-        public MultiplayerServer(Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, byte[]> OnFrameReceived) :
-            this(DEFAULT_PORT, OnConnected, OnDisconnected, OnFrameReceived) {
         }
 
         public MultiplayerServer(int port, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, byte[]> OnFrameReceived) {
