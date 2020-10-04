@@ -182,6 +182,14 @@ namespace Networking {
             Debug.Log("Server shutdown completed");
         }
 
+        public void Disconnect(Guid connectionId) {
+            if (connections.TryGetValue(connectionId, out Connection connection)) {
+                connection.Disconnect();
+            } else {
+                throw new InvalidOperationException(string.Format("Cannot disconnect connection {0} because that connection does not exist", connectionId));
+            }
+        }
+
         public void Broadcast(byte[] frame) {
             foreach (var connection in connections.Values) {
                 connection.Send(frame);

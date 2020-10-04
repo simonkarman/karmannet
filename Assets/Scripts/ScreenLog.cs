@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Networking;
+using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
@@ -13,6 +14,8 @@ public class ScreenLog : MonoBehaviour {
     private Transform linesParent = null;
     [SerializeField]
     private int maxNumberOfLines = 20;
+    [SerializeField]
+    private bool visibleOnStart = false;
 
     private bool visible = true;
     private int currentIndex = -1;
@@ -26,6 +29,15 @@ public class ScreenLog : MonoBehaviour {
         ThreadManager.Activate();
         lines = new ScreenLogLine[maxNumberOfLines];
         Application.logMessageReceivedThreaded += HandleLog;
+        screenLogRootParent.SetActive(visibleOnStart);
+    }
+
+    protected void Update() {
+        if (Input.GetKeyDown(KeyCode.BackQuote)) {
+            foreach (ScreenLog screenLog in FindObjectsOfType<ScreenLog>()) {
+                screenLog.ToggleVisibility();
+            }
+        }
     }
 
     protected void OnDestroy() {

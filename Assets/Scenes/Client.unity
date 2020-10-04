@@ -130,6 +130,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 485378139}
     m_Modifications:
+    - target: {fileID: 1992122529672334104, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2462089788293448821, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -225,6 +229,10 @@ PrefabInstance:
     - target: {fileID: 8175664198724882266, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
       propertyPath: m_Name
       value: ScreenLog
+      objectReference: {fileID: 0}
+    - target: {fileID: 8175664198724882271, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
+      propertyPath: visibleOnStart
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 14cac0b3517643f43a4c07af43c71e03, type: 3}
@@ -445,8 +453,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   connectionString: localhost
-  messageSendInternal: 10
-  stayConnectedDuration: 60
 --- !u!4 &1040089227
 Transform:
   m_ObjectHideFlags: 0

@@ -1,18 +1,12 @@
-﻿using System.Text;
+﻿using Networking;
+using System.Text;
 using UnityEngine;
-using Networking;
 
 public class ClientFlow : MonoBehaviour {
     [SerializeField]
     private string connectionString = "localhost";
-    [SerializeField]
-    private float messageSendInterval = 10f;
-    [SerializeField]
-    private float stayConnectedDuration = 60f;
 
     private MultiplayerClient client = null;
-    private float timeSinceLastMessage = 0f;
-    private bool welcomeMessageSend = false;
     private string username;
 
     public void Start() {
@@ -25,45 +19,24 @@ public class ClientFlow : MonoBehaviour {
         client = new MultiplayerClient(ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_PORT), OnFrameReceived);
     }
 
-    public void OnDestroy() {
-        if (client.Status == ConnectionStatus.CONNECTED) {
-            client.Disconnect();
-        }
-    }
-
+    private float connectedTimeAtLastSend = 0f;
     public void Update() {
-        if (Input.GetKeyDown(KeyCode.BackQuote)) {
-            foreach (ScreenLog screenLog in FindObjectsOfType<ScreenLog>()) {
-                screenLog.ToggleVisibility();
+        if (client.IsConnected()) {
+            float sendInterval = 1f;
+            float connectedTime = client.RealtimeSinceConnectionEstablished;
+            if (connectedTime > connectedTimeAtLastSend + sendInterval) {
+                connectedTimeAtLastSend = connectedTime;
+                client.Send(Encoding.ASCII.GetBytes(string.Format(
+                    "{0} has been connected for {1} second(s).",
+                    username,
+                    connectedTime.ToString("0")
+                )));
             }
         }
-
-        if (client.Status == ConnectionStatus.CONNECTED) {
-            UpdateWhenConnected();
-        }
     }
 
-    private void UpdateWhenConnected() {
-        if (!welcomeMessageSend) {
-            welcomeMessageSend = true;
-            client.Send(Encoding.ASCII.GetBytes(string.Format(
-                "Hello, server! My username is {0}.",
-                username
-            )));
-            client.Send(Encoding.ASCII.GetBytes("Hi."));
-        }
-
-        timeSinceLastMessage += Time.deltaTime;
-        if (timeSinceLastMessage >= messageSendInterval) {
-            timeSinceLastMessage -= messageSendInterval;
-            client.Send(Encoding.ASCII.GetBytes(string.Format(
-                "{0} has been around for {1} second(s).",
-                username,
-                client.RealtimeSinceConnectionEstablished
-            )));
-        }
-
-        if (client.RealtimeSinceConnectionEstablished > stayConnectedDuration) {
+    public void OnDestroy() {
+        if (client.Status == ConnectionStatus.CONNECTED) {
             client.Disconnect();
         }
     }
