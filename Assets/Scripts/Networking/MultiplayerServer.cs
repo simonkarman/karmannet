@@ -84,6 +84,7 @@ namespace Networking {
         private readonly Action<Guid> OnConnected;
         private readonly Action<Guid> OnDisconnected;
         private readonly Action<Guid, byte[]> OnFrameReceived;
+        private readonly PacketFactory packetFactory;
 
         public ServerStatus Status { get; private set; } = ServerStatus.RUNNING;
 
@@ -94,8 +95,9 @@ namespace Networking {
             }
         }
 
-        public MultiplayerServer(int port, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, byte[]> OnFrameReceived) {
+        public MultiplayerServer(int port, PacketFactory packetFactory, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, Packet> OnPacketReceived) {
             Debug.Log(string.Format("Start of setting up server on port {0}", port));
+            this.packetFactory = packetFactory;
             startedTimestamp = Time.realtimeSinceStartup;
 
             IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
@@ -112,9 +114,9 @@ namespace Networking {
                     OnDisconnected(connectionId);
                 });
             };
-            this.OnFrameReceived = (Guid connectionId, byte[] frame) => {
+            OnFrameReceived = (Guid connectionId, byte[] bytes) => {
                 ThreadManager.ExecuteOnMainThread(() => {
-                    OnFrameReceived(connectionId, frame);
+                    OnPacketReceived(connectionId, packetFactory.FromBytes(bytes));
                 });
             };
             ;
@@ -190,15 +192,17 @@ namespace Networking {
             }
         }
 
-        public void Broadcast(byte[] frame) {
+        public void Broadcast(Packet packet) {
+            byte[] bytes = packetFactory.GetBytes(packet);
             foreach (var connection in connections.Values) {
-                connection.Send(frame);
+                connection.Send(bytes);
             }
         }
 
-        public void Send(Guid connectionId, byte[] frame) {
+        public void Send(Guid connectionId, Packet packet) {
+            byte[] bytes = packetFactory.GetBytes(packet);
             if (connections.TryGetValue(connectionId, out Connection connection)) {
-                connection.Send(frame);
+                connection.Send(bytes);
             } else {
                 throw new InvalidOperationException(string.Format("Cannot send a message to connection {0} because that connection does not exist", connectionId));
             }

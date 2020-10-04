@@ -6,7 +6,6 @@ using UnityEngine;
 
 public class ServerFlow : MonoBehaviour {
 
-
     public class ServerFlowPlayer {
         private readonly ServerFlow serverFlow;
         private readonly Guid connectionId;
@@ -29,7 +28,8 @@ public class ServerFlow : MonoBehaviour {
         }
 
         public void Kick() {
-            serverFlow.server.Send(connectionId, Encoding.ASCII.GetBytes("You were kicked by the server!"));
+            MessagePacket messagePacket = new MessagePacket("You were kicked by the server!");
+            serverFlow.server.Send(connectionId, messagePacket);
             serverFlow.server.Disconnect(connectionId);
         }
 
@@ -53,14 +53,14 @@ public class ServerFlow : MonoBehaviour {
 
     private IEnumerator<YieldInstruction> DoScheduledShutdown() {
         int shutdownDelay = 5;
-        server.Broadcast(Encoding.ASCII.GetBytes(string.Format("The server is shutting down in {0} seconds!", shutdownDelay)));
+        MessagePacket messagePacket = new MessagePacket(string.Format("The server is shutting down in {0} seconds!", shutdownDelay));
+        server.Broadcast(messagePacket);
         yield return new WaitForSeconds(shutdownDelay);
         server.Shutdown();
     }
 
     protected void Start() {
-        server = new MultiplayerServer(DEFAULT_PORT, OnConnected, OnDisconnected, OnFrameReceived);
-        onPlayersChanged += (_) => Debug.Log("Players Changed!");
+        server = new MultiplayerServer(DEFAULT_PORT, PacketFactoryBuilder.GetPacketFactory(), OnConnected, OnDisconnected, OnPacketReceived);
     }
 
     protected void OnDestroy() {
@@ -75,7 +75,8 @@ public class ServerFlow : MonoBehaviour {
 
     private void OnConnected(Guid connectionId) {
         Debug.Log(string.Format("ServerFlow: Client {0} connected", connectionId));
-        server.Send(connectionId, Encoding.ASCII.GetBytes(string.Format("Welcome {0}. You're now connected to the server!", connectionId)));
+        MessagePacket messagePacket = new MessagePacket(string.Format("Welcome {0}. You're now connected to the server!", connectionId));
+        server.Send(connectionId, messagePacket);
         players.Add(connectionId, new ServerFlowPlayer(this, connectionId, "Unknown Player"));
         onPlayersChanged(new List<ServerFlowPlayer>(players.Values));
     }
@@ -86,14 +87,15 @@ public class ServerFlow : MonoBehaviour {
         onPlayersChanged(new List<ServerFlowPlayer>(players.Values));
     }
 
-    private void OnFrameReceived(Guid connectionId, byte[] frame) {
-        string message = Encoding.ASCII.GetString(frame);
-        Debug.Log(string.Format("ServerFlow: Client {0} says: {1}", connectionId, message));
-        if (players.TryGetValue(connectionId, out ServerFlowPlayer player)) {
-            player.SetLastReceivedMessage(message);
-            onPlayersChanged(new List<ServerFlowPlayer>(players.Values));
-        } else {
-            throw new InvalidOperationException(string.Format("Cannot set last received message of the player with connection {0} because that connection does not exist", connectionId));
+    private void OnPacketReceived(Guid connectionId, Packet packet) {
+        if (packet is MessagePacket messagePacket) {
+            Debug.Log(string.Format("ServerFlow: Client {0} says: {1}", connectionId, messagePacket.GetMessage()));
+            if (players.TryGetValue(connectionId, out ServerFlowPlayer player)) {
+                player.SetLastReceivedMessage(messagePacket.GetMessage());
+                onPlayersChanged(new List<ServerFlowPlayer>(players.Values));
+            } else {
+                throw new InvalidOperationException(string.Format("Cannot set last received message of the player with connection {0} because that connection does not exist", connectionId));
+            }
         }
     }
 }

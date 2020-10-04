@@ -16,7 +16,7 @@ public class ClientFlow : MonoBehaviour {
         username = string.Format("User-" + (Random.value * 10000).ToString("0000"));
         Debug.Log(string.Format("Username: {0}", username));
 
-        client = new MultiplayerClient(ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_PORT), OnFrameReceived);
+        client = new MultiplayerClient(ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_PORT), PacketFactoryBuilder.GetPacketFactory(), OnPacketReceived);
     }
 
     private float connectedTimeAtLastSend = 0f;
@@ -26,7 +26,7 @@ public class ClientFlow : MonoBehaviour {
             float connectedTime = client.RealtimeSinceConnectionEstablished;
             if (connectedTime > connectedTimeAtLastSend + sendInterval) {
                 connectedTimeAtLastSend = connectedTime;
-                client.Send(Encoding.ASCII.GetBytes(string.Format(
+                client.Send(new MessagePacket(string.Format(
                     "{0} has been connected for {1} second(s).",
                     username,
                     connectedTime.ToString("0")
@@ -41,7 +41,9 @@ public class ClientFlow : MonoBehaviour {
         }
     }
 
-    public void OnFrameReceived(byte[] frame) {
-        Debug.Log(string.Format("Server says: {0}", Encoding.ASCII.GetString(frame)));
+    public void OnPacketReceived(Packet packet) {
+        if (packet is MessagePacket messagePacket) {
+            Debug.Log(string.Format("Server says: {0}", messagePacket.GetMessage()));
+        }
     }
 }

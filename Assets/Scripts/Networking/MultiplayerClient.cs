@@ -13,6 +13,7 @@ namespace Networking {
         private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
         private readonly ByteFramer byteFramer;
         private readonly ByteSender byteSender;
+        private readonly PacketFactory packetFactory;
 
         private float connectionEstablishedTimestamp;
         public float RealtimeSinceConnectionEstablished {
@@ -34,11 +35,16 @@ namespace Networking {
             return Status == ConnectionStatus.CONNECTED;
         }
 
-        public MultiplayerClient(IPEndPoint serverEndpoint, Action<byte[]> OnFrameReceived) {
+        public MultiplayerClient(IPEndPoint serverEndpoint, PacketFactory packetFactory, Action<Packet> OnPacketReceived) {
             Debug.Log(string.Format("Start of setting up connection to {0}", serverEndpoint));
+            this.packetFactory = packetFactory;
             ThreadManager.Activate();
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            byteFramer = new ByteFramer(MAX_FRAME_SIZE, OnFrameReceived);
+            byteFramer = new ByteFramer(MAX_FRAME_SIZE, (byte[] bytes) => {
+                ThreadManager.ExecuteOnMainThread(() => {
+                    OnPacketReceived(packetFactory.FromBytes(bytes));
+                });
+            });
             byteSender = new ByteSender(this);
 
             var connectingThread = new Thread(() => {
@@ -78,8 +84,9 @@ namespace Networking {
             }
         }
 
-        public void Send(byte[] data) {
-            byte[] frame = byteFramer.Frame(data);
+        public void Send(Packet packet) {
+            byte[] bytes = packetFactory.GetBytes(packet);
+            byte[] frame = byteFramer.Frame(bytes);
             byteSender.Send(frame);
         }
 
