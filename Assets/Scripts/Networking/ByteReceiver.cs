@@ -46,7 +46,6 @@ namespace Networking {
                     return;
                 }
 
-                Debug.Log(string.Format("Received {0} bytes from {1}", bytesRead, connection.GetConnectedWithIdentifier()));
                 byte[] bytes = new byte[bytesRead];
                 Buffer.BlockCopy(receiveBuffer, 0, bytes, 0, bytesRead);
                 OnBytesReceived(bytes);

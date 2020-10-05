@@ -36,7 +36,6 @@ namespace Networking {
 
             try {
                 int bytesSent = connection.GetSocket().EndSend(ar);
-                Debug.Log(string.Format("Successfully sent {0} byte(s) to {1}", bytesSent, connection.GetConnectedWithIdentifier()));
             } catch (Exception e) {
                 Debug.LogError(string.Format("An error occurred in the send callback from {0}: {1}", connection.GetConnectedWithIdentifier(), e.ToString()));
             }

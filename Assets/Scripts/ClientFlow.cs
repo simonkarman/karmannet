@@ -1,5 +1,4 @@
 ﻿using Networking;
-using System.Text;
 using UnityEngine;
 
 public class ClientFlow : MonoBehaviour {
@@ -25,7 +24,7 @@ public class ClientFlow : MonoBehaviour {
             float sendInterval = 1f;
             float connectedTime = client.RealtimeSinceConnectionEstablished;
             if (connectedTime > connectedTimeAtLastSend + sendInterval) {
-                connectedTimeAtLastSend = connectedTime;
+                connectedTimeAtLastSend = Time.realtimeSinceStartup;
                 client.Send(new MessagePacket(string.Format(
                     "{0} has been connected for {1} second(s).",
                     username,
@@ -44,6 +43,10 @@ public class ClientFlow : MonoBehaviour {
     public void OnPacketReceived(Packet packet) {
         if (packet is MessagePacket messagePacket) {
             Debug.Log(string.Format("Server says: {0}", messagePacket.GetMessage()));
+
+        } else if (packet is RequestUsernamePacket requestUsernamePacket) {
+            ProvideUsernamePacket provideUsernamePacket = new ProvideUsernamePacket(requestUsernamePacket.GetSecret(), username);
+            client.Send(provideUsernamePacket);
         }
     }
 }
