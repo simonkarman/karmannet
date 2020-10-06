@@ -2,13 +2,14 @@
 using UnityEngine;
 
 public class ClientFlow : MonoBehaviour {
-    [SerializeField]
-    private string connectionString = "localhost";
+    public const string CONNECTION_STRING_PLAYER_PREFS_KEY = "connectionString";
 
+    private string connectionString = "localhost";
     private MultiplayerClient client = null;
     private string username;
 
     public void Start() {
+        connectionString = PlayerPrefs.GetString(CONNECTION_STRING_PLAYER_PREFS_KEY, "localhost");
         string buildId = Application.isEditor ? "<IN EDITOR>" : Application.buildGUID;
         Debug.Log(string.Format("Build id: {0}", buildId));
 
@@ -21,7 +22,7 @@ public class ClientFlow : MonoBehaviour {
     private float connectedTimeAtLastSend = 0f;
     public void Update() {
         if (client.IsConnected()) {
-            float sendInterval = 1f;
+            float sendInterval = 5f;
             float connectedTime = client.RealtimeSinceConnectionEstablished;
             if (connectedTime > connectedTimeAtLastSend + sendInterval) {
                 connectedTimeAtLastSend = Time.realtimeSinceStartup;
