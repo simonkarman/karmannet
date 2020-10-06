@@ -37,6 +37,7 @@ namespace Networking {
 
         public MultiplayerClient(IPEndPoint serverEndpoint, PacketFactory packetFactory, Action<Packet> OnPacketReceived) {
             Debug.Log(string.Format("Start of setting up connection to {0}", serverEndpoint));
+            Debug.Log(packetFactory.ToString());
             this.packetFactory = packetFactory;
             ThreadManager.Activate();
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

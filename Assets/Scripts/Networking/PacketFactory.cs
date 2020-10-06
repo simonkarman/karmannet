@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
+using UnityEngine;
 
 /*
  * Example usage of PacketFactory class
@@ -20,7 +22,11 @@ namespace Networking {
         private readonly Dictionary<Type, int> identifiers = new Dictionary<Type, int>();
         private readonly Dictionary<int, ConstructorInfo> constructors = new Dictionary<int, ConstructorInfo>();
 
-        public void Assign(int identifier, Type type) {
+        public void Assign(Type type) {
+            Assign(type.FullName.GetHashCode(), type);
+        }
+
+        private void Assign(int identifier, Type type) {
             if (!type.IsClass || type.IsAbstract || !typeof(Packet).IsAssignableFrom(type)) {
                 throw new InvalidOperationException(string.Format(
                     "Cannot assign type {0}, because (a) it is not a class, or (b) it is an abstract class, or (c) it does not derive from the Packet class.",
@@ -90,6 +96,18 @@ namespace Networking {
             byte[] packetData = new byte[bytes.Length - PREFIX_LENGTH];
             Array.Copy(bytes, PREFIX_LENGTH, packetData, 0, packetData.Length);
             return (Packet)packetConstructor.Invoke(new[] { packetData });
+        }
+
+        public override string ToString() {
+            StringBuilder sb = new StringBuilder("PacketFactory: [");
+            foreach (var kvp in identifiers) {
+                sb.Append(string.Format("{0}({1}), ", kvp.Key, kvp.Value));
+            }
+            if (identifiers.Count > 0) {
+                sb.Remove(sb.Length - 2, 2);
+            }
+            sb.Append("]");
+            return sb.ToString();
         }
     }
 }

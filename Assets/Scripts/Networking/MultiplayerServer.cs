@@ -97,6 +97,7 @@ namespace Networking {
 
         public MultiplayerServer(int port, PacketFactory packetFactory, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, Packet> OnPacketReceived) {
             Debug.Log(string.Format("Start of setting up server on port {0}", port));
+            Debug.Log(packetFactory.ToString());
             this.packetFactory = packetFactory;
             startedTimestamp = Time.realtimeSinceStartup;
 

@@ -68,7 +68,7 @@ public class ServerFlow : MonoBehaviour {
     }
 
     protected void Start() {
-        server = new MultiplayerServer(DEFAULT_PORT, PacketFactoryBuilder.GetPacketFactory(), OnConnected, OnDisconnected, OnPacketReceived);
+        server = new MultiplayerServer(DEFAULT_PORT, PacketFactoryBuilder.FromAssemblies(), OnConnected, OnDisconnected, OnPacketReceived);
     }
 
     protected void OnDestroy() {

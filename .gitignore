@@ -8,6 +8,7 @@
 .vs
 .idea
 .code
+.vscode
 *.csproj
 *.unityproj
 *.sln
