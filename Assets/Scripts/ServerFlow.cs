@@ -51,7 +51,7 @@ public class ServerFlow : MonoBehaviour {
     }
 
     public const int DEFAULT_PORT = 14641;
-    private MultiplayerServer server;
+    private Server server;
     private readonly Dictionary<Guid, ServerFlowPlayer> players = new Dictionary<Guid, ServerFlowPlayer>();
     public Action<IReadOnlyList<ServerFlowPlayer>> onPlayersChanged;
 
@@ -68,7 +68,7 @@ public class ServerFlow : MonoBehaviour {
     }
 
     protected void Start() {
-        server = new MultiplayerServer(DEFAULT_PORT, PacketFactoryBuilder.FromAssemblies(), OnConnected, OnDisconnected, OnPacketReceived);
+        server = new Server(DEFAULT_PORT, PacketFactoryBuilder.FromAssemblies(), OnConnected, OnDisconnected, OnPacketReceived);
     }
 
     protected void OnDestroy() {

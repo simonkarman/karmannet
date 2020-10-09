@@ -5,7 +5,7 @@ using System.Threading;
 using UnityEngine;
 
 namespace Networking {
-    public class MultiplayerClient : IConnection {
+    public class Client : IConnection {
         public static readonly int MAX_FRAME_SIZE = 256;
 
         public readonly IPEndPoint serverEndpoint;
@@ -29,7 +29,7 @@ namespace Networking {
             return Status == ConnectionStatus.CONNECTED;
         }
 
-        public MultiplayerClient(IPEndPoint serverEndpoint, PacketFactory packetFactory, Action<Packet> OnPacketReceived) {
+        public Client(IPEndPoint serverEndpoint, PacketFactory packetFactory, Action<Packet> OnPacketReceived) {
             Debug.Log(string.Format("Start of setting up connection to {0}", serverEndpoint));
             Debug.Log(packetFactory.ToString());
             this.packetFactory = packetFactory;

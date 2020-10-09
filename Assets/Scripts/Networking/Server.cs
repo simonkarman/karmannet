@@ -7,12 +7,12 @@ using UnityEngine;
 using System.Linq;
 
 namespace Networking {
-    public class MultiplayerServer {
+    public class Server {
 
         public class Connection : IConnection {
             public const int MAX_FRAME_SIZE = 256;
 
-            private readonly MultiplayerServer server;
+            private readonly Server server;
             public readonly Guid connectionId;
             private readonly Socket socket;
             private readonly ByteFramer byteFramer;
@@ -32,7 +32,7 @@ namespace Networking {
                 return Status == ConnectionStatus.CONNECTED;
             }
 
-            public Connection(MultiplayerServer server, Guid connectionId, Socket socket) {
+            public Connection(Server server, Guid connectionId, Socket socket) {
                 this.server = server;
                 this.connectionId = connectionId;
                 this.socket = socket;
@@ -77,7 +77,7 @@ namespace Networking {
 
         public ServerStatus Status { get; private set; } = ServerStatus.RUNNING;
 
-        public MultiplayerServer(int port, PacketFactory packetFactory, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, Packet> OnPacketReceived) {
+        public Server(int port, PacketFactory packetFactory, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, Packet> OnPacketReceived) {
             Debug.Log(string.Format("Start of setting up server on port {0}", port));
             Debug.Log(packetFactory.ToString());
             this.packetFactory = packetFactory;

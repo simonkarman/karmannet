@@ -5,7 +5,7 @@ public class ClientFlow : MonoBehaviour {
     public const string CONNECTION_STRING_PLAYER_PREFS_KEY = "connectionString";
 
     private string connectionString = "localhost";
-    private MultiplayerClient client = null;
+    private Client client = null;
     private string username;
 
     public void Start() {
@@ -16,7 +16,7 @@ public class ClientFlow : MonoBehaviour {
         username = string.Format("User-" + (Random.value * 10000).ToString("0000"));
         Debug.Log(string.Format("Username: {0}", username));
 
-        client = new MultiplayerClient(ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_PORT), PacketFactoryBuilder.FromAssemblies(), OnPacketReceived);
+        client = new Client(ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_PORT), PacketFactoryBuilder.FromAssemblies(), OnPacketReceived);
     }
 
     private float connectedTimeAtLastSend = 0f;
