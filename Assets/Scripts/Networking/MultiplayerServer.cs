@@ -20,13 +20,6 @@ namespace Networking {
 
             public ConnectionStatus Status { get; private set; } = ConnectionStatus.CONNECTED;
 
-            private float connectionEstablishedTimestamp;
-            public float RealtimeSinceConnectionEstablished {
-                get {
-                    return Time.realtimeSinceStartup - connectionEstablishedTimestamp;
-                }
-            }
-
             public Socket GetSocket() {
                 return socket;
             }
@@ -53,10 +46,6 @@ namespace Networking {
                 });
 
                 byteSender = new ByteSender(this);
-
-                ThreadManager.ExecuteOnMainThread(() => {
-                    connectionEstablishedTimestamp = Time.realtimeSinceStartup;
-                });
             }
 
             public void Disconnect() {
@@ -88,18 +77,10 @@ namespace Networking {
 
         public ServerStatus Status { get; private set; } = ServerStatus.RUNNING;
 
-        private float startedTimestamp;
-        public float RealtimeSinceStarted {
-            get {
-                return Time.realtimeSinceStartup - startedTimestamp;
-            }
-        }
-
         public MultiplayerServer(int port, PacketFactory packetFactory, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, Packet> OnPacketReceived) {
             Debug.Log(string.Format("Start of setting up server on port {0}", port));
             Debug.Log(packetFactory.ToString());
             this.packetFactory = packetFactory;
-            startedTimestamp = Time.realtimeSinceStartup;
 
             IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
             ThreadManager.Activate();

@@ -23,9 +23,9 @@ public class ClientFlow : MonoBehaviour {
     public void Update() {
         if (client.IsConnected()) {
             float sendInterval = 5f;
-            float connectedTime = client.RealtimeSinceConnectionEstablished;
+            float connectedTime = Time.timeSinceLevelLoad;
             if (connectedTime > connectedTimeAtLastSend + sendInterval) {
-                connectedTimeAtLastSend = Time.realtimeSinceStartup;
+                connectedTimeAtLastSend = Time.timeSinceLevelLoad;
                 client.Send(new MessagePacket(string.Format(
                     "{0} has been connected for {1} second(s).",
                     username,

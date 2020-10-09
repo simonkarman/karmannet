@@ -15,12 +15,6 @@ namespace Networking {
         private readonly ByteSender byteSender;
         private readonly PacketFactory packetFactory;
 
-        private float connectionEstablishedTimestamp;
-        public float RealtimeSinceConnectionEstablished {
-            get {
-                return Time.realtimeSinceStartup - connectionEstablishedTimestamp;
-            }
-        }
         public ConnectionStatus Status { get; private set; } = ConnectionStatus.NEW;
 
         public Socket GetSocket() {
@@ -57,9 +51,6 @@ namespace Networking {
                 if (socket.Connected) {
                     Debug.Log("Succesfully connected to the server");
                     Status = ConnectionStatus.CONNECTED;
-                    ThreadManager.ExecuteOnMainThread(() => {
-                        connectionEstablishedTimestamp = Time.realtimeSinceStartup;
-                    });
                     new ByteReceiver(this, (bytes) => {
                         byteFramer.Append(bytes);
                     });
