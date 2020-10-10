@@ -64,8 +64,8 @@ public class KarmanServer {
         server = new Server(port, OnConnected, OnDisconnected, OnPacketReceived);
     }
 
-    public ServerStatus GetStatus() {
-        return server.Status;
+    public bool IsRunning() {
+        return server.Status == ServerStatus.RUNNING;
     }
 
     private void OnConnected(Guid connectionId) {
@@ -154,12 +154,13 @@ public class KarmanServer {
         if (packet is LeavePacket) {
             Kick(clientId);
         } else {
-            Debug.Log(string.Format("KarmanServer: Unhandled packet of type {0} for client {1}", packet.GetType().Name, client.GetClientId()));
+            Debug.LogWarning(string.Format("KarmanServer: Did not handle a received packet that is of type {0} for client {1}", packet.GetType().Name, client.GetClientId()));
         }
     }
 
     public void Shutdown() {
         server.Shutdown();
+        OnClientsChanged();
     }
 
     public void Broadcast(Packet packet) {

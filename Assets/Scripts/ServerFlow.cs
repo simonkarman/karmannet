@@ -1,5 +1,4 @@
-﻿using Networking;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,13 +19,13 @@ public class ServerFlow : MonoBehaviour {
     }
 
     protected void OnDestroy() {
-        if (server.GetStatus() == ServerStatus.RUNNING) {
+        if (server.IsRunning()) {
             server.Shutdown();
         }
     }
 
-    public ServerStatus GetServerStatus() {
-        return server.GetStatus();
+    public bool IsServerRunning() {
+        return server.IsRunning();
     }
 
     public Guid GetServerId() {

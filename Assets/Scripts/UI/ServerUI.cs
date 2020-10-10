@@ -45,7 +45,7 @@ public class ServerUI : MonoBehaviour {
         serverIdText.text = serverFlow.GetServerId().ToString();
         serverNameText.text = serverFlow.GetServerName();
         serverProtocolText.text = serverFlow.GetServerProtocolVersion();
-        serverStatusText.text = serverFlow.GetServerStatus().ToString();
+        serverStatusText.text = "Server " + (serverFlow.IsServerRunning() ? "is running" : "was shutdown");
     }
 
     public void ScheduleShutdown() {
