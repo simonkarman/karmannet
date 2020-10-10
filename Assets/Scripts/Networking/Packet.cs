@@ -5,8 +5,10 @@
             this.bytes = bytes;
         }
 
-        public byte[] GetBytesInternal() {
+        public byte[] GetBytes() {
             return bytes;
         }
+
+        public abstract void Validate();
     }
 }

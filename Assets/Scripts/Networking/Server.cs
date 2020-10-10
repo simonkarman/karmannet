@@ -25,7 +25,7 @@ namespace Networking {
             }
 
             public string GetConnectedWithIdentifier() {
-                return string.Format("client-{0}", connectionId.ToString());
+                return string.Format("connection-{0}", connectionId.ToString());
             }
 
             public bool IsConnected() {
@@ -50,15 +50,15 @@ namespace Networking {
 
             public void Disconnect() {
                 if (Status == ConnectionStatus.DISCONNECTED) {
-                    Debug.LogError(string.Format("Server cannot disconnect connection with client-{0} when it has already been disconnected", connectionId));
+                    Debug.LogError(string.Format("Server cannot disconnect connection with connection {0} when it has already been disconnected", connectionId));
                     return;
                 }
-                Debug.Log(string.Format("Disconnecting connection with client-{0}", connectionId));
+                Debug.Log(string.Format("Disconnecting connection {0}", connectionId));
                 Status = ConnectionStatus.DISCONNECTED;
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
                 server.OnDisconnected(connectionId);
-                Debug.Log(string.Format("Successfully disconnected from client-{0}", connectionId));
+                Debug.Log(string.Format("Successfully disconnected connection {0}", connectionId));
             }
 
             public void Send(byte[] data) {
@@ -77,10 +77,10 @@ namespace Networking {
 
         public ServerStatus Status { get; private set; } = ServerStatus.RUNNING;
 
-        public Server(int port, PacketFactory packetFactory, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, Packet> OnPacketReceived) {
+        public Server(int port, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, Packet> OnPacketReceived) {
             Debug.Log(string.Format("Start of setting up server on port {0}", port));
+            packetFactory = PacketFactory.BuildFromAllAssemblies();
             Debug.Log(packetFactory.ToString());
-            this.packetFactory = packetFactory;
 
             IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
             ThreadManager.Activate();

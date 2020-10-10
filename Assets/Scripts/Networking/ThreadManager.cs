@@ -26,7 +26,12 @@ namespace Networking {
                 requestedActions.Clear();
             }
             for (int i = 0; i < currentActions.Count; i++) {
-                currentActions[i]();
+                try {
+                    currentActions[i]();
+                } catch (Exception excepction) {
+                    Debug.LogWarning("An error occurred, while executing an action in the thread manager.");
+                    Debug.LogError(excepction, this);
+                }
             }
             currentActions.Clear();
         }

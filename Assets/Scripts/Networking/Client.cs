@@ -29,10 +29,10 @@ namespace Networking {
             return Status == ConnectionStatus.CONNECTED;
         }
 
-        public Client(IPEndPoint serverEndpoint, PacketFactory packetFactory, Action<Packet> OnPacketReceived) {
+        public Client(IPEndPoint serverEndpoint, Action<Packet> OnPacketReceived) {
             Debug.Log(string.Format("Start of setting up connection to {0}", serverEndpoint));
+            packetFactory = PacketFactory.BuildFromAllAssemblies();
             Debug.Log(packetFactory.ToString());
-            this.packetFactory = packetFactory;
             ThreadManager.Activate();
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             byteFramer = new ByteFramer(MAX_FRAME_SIZE, (byte[] bytes) => {

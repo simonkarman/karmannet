@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
-using UnityEngine;
 
 /*
  * Example usage of PacketFactory class
@@ -21,6 +21,16 @@ namespace Networking {
     public class PacketFactory {
         private readonly Dictionary<Type, int> identifiers = new Dictionary<Type, int>();
         private readonly Dictionary<int, ConstructorInfo> constructors = new Dictionary<int, ConstructorInfo>();
+
+        public static PacketFactory BuildFromAllAssemblies() {
+            PacketFactory packetFactory = new PacketFactory();
+            foreach (var type in AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes())) {
+                if (typeof(Packet).IsAssignableFrom(type) && type.IsClass && !type.IsAbstract) {
+                    packetFactory.Assign(type);
+                }
+            }
+            return packetFactory;
+        }
 
         public void Assign(Type type) {
             Assign(type.FullName.GetHashCode(), type);
@@ -63,6 +73,7 @@ namespace Networking {
         }
 
         public byte[] GetBytes(Packet packet) {
+            packet.Validate();
             Type type = packet.GetType();
             if (!identifiers.TryGetValue(type, out int identifier)) {
                 throw new InvalidOperationException(string.Format(
@@ -71,7 +82,7 @@ namespace Networking {
                 ));
             }
             byte[] prefix = BitConverter.GetBytes(identifier);
-            byte[] data = packet.GetBytesInternal();
+            byte[] data = packet.GetBytes();
 
             int length = prefix.Length + data.Length;
             byte[] bytes = new byte[length];
@@ -95,7 +106,9 @@ namespace Networking {
             const int PREFIX_LENGTH = 4;
             byte[] packetData = new byte[bytes.Length - PREFIX_LENGTH];
             Array.Copy(bytes, PREFIX_LENGTH, packetData, 0, packetData.Length);
-            return (Packet)packetConstructor.Invoke(new[] { packetData });
+            Packet packet = (Packet)packetConstructor.Invoke(new[] { packetData });
+            packet.Validate();
+            return packet;
         }
 
         public override string ToString() {

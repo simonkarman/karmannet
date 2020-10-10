@@ -11,6 +11,10 @@ public class MessagePacket : Networking.Packet {
         this.message = message;
     }
 
+    public override void Validate() {
+        // No validation needed for the message
+    }
+
     public string GetMessage() {
         return message;
     }
