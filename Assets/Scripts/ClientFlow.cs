@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using KarmanProtocol;
+using UnityEngine;
 
 public class ClientFlow : MonoBehaviour {
     public const string CONNECTION_STRING_PLAYER_PREFS_KEY = "connectionString";

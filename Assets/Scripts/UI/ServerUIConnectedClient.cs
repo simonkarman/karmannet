@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using KarmanProtocol;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class ServerUIConnectedClient : MonoBehaviour {

@@ -122,7 +122,6 @@ namespace Networking {
                     break;
                 }
 
-                // TODO: When server is full, either stop accepting new connection or allow them and notify them instantly after connection was setup
                 rootSocket.BeginAccept(new AsyncCallback(AcceptCallback), null);
 
                 acceptDone.WaitOne();
