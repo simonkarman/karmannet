@@ -30,7 +30,7 @@ public class MainMenu : MonoBehaviour {
         Thread thread = new Thread(() => {
             try {
                 Debug.Log(string.Format("Parsing of connection string '{0}'", connectionString), this);
-                IPEndPoint endpoint = Networking.ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_PORT);
+                IPEndPoint endpoint = Networking.ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_SERVER_PORT);
                 Debug.Log(string.Format("Parsing connection string '{0}' resulted in {1}", connectionString, endpoint.ToString()), this);
                 Networking.ThreadManager.ExecuteOnMainThread(() => {
                     PlayerPrefs.SetString(ClientFlow.CONNECTION_STRING_PLAYER_PREFS_KEY, connectionStringInput.text);

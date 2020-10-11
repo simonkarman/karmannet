@@ -1,4 +1,5 @@
 ﻿using KarmanProtocol;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,40 +14,78 @@ public class ServerUI : MonoBehaviour {
     [SerializeField]
     private Text serverIdText = default;
     [SerializeField]
-    private Text serverNameText = default;
-    [SerializeField]
     private Text serverProtocolText = default;
     [SerializeField]
     private Text serverStatusText = default;
+    [SerializeField]
+    private Button scheduleShutdownButton = default;
+    [SerializeField]
+    private Color runningColor = Color.green;
+    [SerializeField]
+    private Color shutdownColor = Color.red;
+
+    private KarmanServer karmanServer;
+    private class ServerUIClientInfo {
+        private Guid clientId;
+        private bool connected;
+
+        public ServerUIClientInfo(Guid clientId, bool connected) {
+            this.clientId = clientId;
+            this.connected = connected;
+        }
+
+        public Guid GetClientId() {
+            return clientId;
+        }
+
+        public void SetConnected(bool connected) {
+            this.connected = connected;
+        }
+
+        public bool IsConnected() {
+            return connected;
+        }
+    }
+    private readonly Dictionary<Guid, ServerUIClientInfo> clients = new Dictionary<Guid, ServerUIClientInfo>();
 
     protected void Start() {
-        serverFlow.OnClientsChanged += OnClientsChanged;
+        karmanServer = serverFlow.GetKarmanServer();
+        karmanServer.OnRunningCallback += () => {
+            serverIdText.text = karmanServer.id.ToString();
+            serverProtocolText.text = KarmanServer.PROTOCOL_VERSION;
+            serverStatusText.text = "Running";
+            serverStatusText.color = runningColor;
+            scheduleShutdownButton.interactable = true;
+        };
+        karmanServer.OnShutdownCallback += () => {
+            serverStatusText.text = "Shutdown";
+            serverStatusText.color = shutdownColor;
+            scheduleShutdownButton.interactable = false;
+        };
+        karmanServer.OnClientJoinedCallback += (Guid clientId) => { clients.Add(clientId, new ServerUIClientInfo(clientId, false)); OnClientsChanged(); };
+        karmanServer.OnClientConnectedCallback += (Guid clientId) => { clients[clientId].SetConnected(true); OnClientsChanged(); };
+        karmanServer.OnClientDisconnectedCallback += (Guid clientId) => { clients[clientId].SetConnected(false); OnClientsChanged(); };
+        karmanServer.OnClientLeftCallback += (Guid clientId) => { clients.Remove(clientId); OnClientsChanged(); };
     }
 
-    private void OnClientsChanged(IReadOnlyList<IConnectedKarmanClient> clients) {
-        ServerUIConnectedClient[] playerUIs = connectedClientUIParent.GetComponentsInChildren<ServerUIConnectedClient>(true);
+    private void OnClientsChanged() {
+        List<ServerUIClientInfo> clients = new List<ServerUIClientInfo>(this.clients.Values);
+        ServerUIClient[] playerUIs = connectedClientUIParent.GetComponentsInChildren<ServerUIClient>(true);
         for (int i = playerUIs.Length - 1; i >= clients.Count; i--) {
             playerUIs[i].gameObject.SetActive(false);
         }
 
         for (int i = 0; i < clients.Count; i++) {
-            ServerUIConnectedClient playerUI;
+            ServerUIClient playerUI;
             if (playerUIs.Length <= i) {
-                playerUI = Instantiate(connectedClientUIPrefab, connectedClientUIParent).GetComponent<ServerUIConnectedClient>();
+                playerUI = Instantiate(connectedClientUIPrefab, connectedClientUIParent).GetComponent<ServerUIClient>();
                 playerUI.transform.SetAsLastSibling();
             } else {
                 playerUI = playerUIs[i];
                 playerUI.gameObject.SetActive(true);
             }
-            playerUI.SetFrom(serverFlow, clients[i]);
+            playerUI.SetFrom(serverFlow, clients[i].GetClientId(), clients[i].IsConnected());
         }
-    }
-
-    protected void Update() {
-        serverIdText.text = serverFlow.GetServerId().ToString();
-        serverNameText.text = serverFlow.GetServerName();
-        serverProtocolText.text = serverFlow.GetServerProtocolVersion();
-        serverStatusText.text = "Server " + (serverFlow.IsServerRunning() ? "is running" : "was shutdown");
     }
 
     public void ScheduleShutdown() {

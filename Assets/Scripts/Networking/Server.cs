@@ -8,7 +8,6 @@ using System.Linq;
 
 namespace Networking {
     public class Server {
-
         public class Connection : IConnection {
             public const int MAX_FRAME_SIZE = 256;
 
@@ -67,41 +66,31 @@ namespace Networking {
             }
         }
 
-        private ManualResetEvent acceptDone = new ManualResetEvent(false);
-        private readonly Socket rootSocket;
+        private readonly ManualResetEvent acceptDone = new ManualResetEvent(false);
         private readonly Dictionary<Guid, Connection> connections = new Dictionary<Guid, Connection>();
-        private readonly Action<Guid> OnConnected;
-        private readonly Action<Guid> OnDisconnected;
-        private readonly Action<Guid, byte[]> OnFrameReceived;
         private readonly PacketFactory packetFactory;
+        private Socket rootSocket;
 
-        public ServerStatus Status { get; private set; } = ServerStatus.RUNNING;
+        public ServerStatus Status { get; private set; } = ServerStatus.NEW;
 
-        public Server(int port, Action<Guid> OnConnected, Action<Guid> OnDisconnected, Action<Guid, Packet> OnPacketReceived) {
-            Debug.Log(string.Format("Start of setting up server on port {0}", port));
+        public Action OnRunningCallback;
+        public Action OnShutdownCallback;
+        public Action<Guid> OnConnectedCallback;
+        public Action<Guid> OnDisconnectedCallback;
+        public Action<Guid, Packet> OnPacketReceivedCallback;
+
+        public Server() {
             packetFactory = PacketFactory.BuildFromAllAssemblies();
             Debug.Log(packetFactory.ToString());
-
-            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
             ThreadManager.Activate();
+        }
 
-            this.OnConnected = (Guid connectionId) => {
-                ThreadManager.ExecuteOnMainThread(() => {
-                    OnConnected(connectionId);
-                });
-            };
-            this.OnDisconnected = (Guid connectionId) => {
-                connections.Remove(connectionId);
-                ThreadManager.ExecuteOnMainThread(() => {
-                    OnDisconnected(connectionId);
-                });
-            };
-            OnFrameReceived = (Guid connectionId, byte[] bytes) => {
-                ThreadManager.ExecuteOnMainThread(() => {
-                    OnPacketReceived(connectionId, packetFactory.FromBytes(bytes));
-                });
-            };
-            ;
+        public void Start(int port) {
+            if (Status != ServerStatus.NEW) {
+                throw new InvalidOperationException("Cannot start a server that is already running or has already been shutdown");
+            }
+            Debug.Log(string.Format("Starting server on port {0}", port));
+            IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
 
             rootSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             rootSocket.Bind(localEndPoint);
@@ -109,9 +98,42 @@ namespace Networking {
 
             var thread = new Thread(() => {
                 Debug.Log(string.Format("Server is ready for connections on {0}", localEndPoint));
+                Status = ServerStatus.RUNNING;
+                OnRunning();
                 InitiateAcceptLoop();
             });
             thread.Start();
+        }
+
+        private void OnRunning() {
+            ThreadManager.ExecuteOnMainThread(() => {
+                OnRunningCallback();
+            });
+        }
+
+        private void OnShutdown() {
+            ThreadManager.ExecuteOnMainThread(() => {
+                OnShutdownCallback();
+            });
+        }
+
+        private void OnConnected(Guid connectionId) {
+            ThreadManager.ExecuteOnMainThread(() => {
+                OnConnectedCallback(connectionId);
+            });
+        }
+
+        private void OnDisconnected(Guid connectionId) {
+            connections.Remove(connectionId);
+            ThreadManager.ExecuteOnMainThread(() => {
+                OnDisconnectedCallback(connectionId);
+            });
+        }
+
+        private void OnFrameReceived(Guid connectionId, byte[] bytes) {
+            ThreadManager.ExecuteOnMainThread(() => {
+                OnPacketReceivedCallback(connectionId, packetFactory.FromBytes(bytes));
+            });
         }
 
         public void InitiateAcceptLoop() {
@@ -130,8 +152,8 @@ namespace Networking {
 
         public void AcceptCallback(IAsyncResult ar) {
             try {
-                if (Status == ServerStatus.SHUTDOWN) {
-                    Debug.Log("Server cannot handle an accept callback after it was shutdown");
+                if (Status != ServerStatus.RUNNING) {
+                    Debug.Log("Server cannot handle an accept callback when it is not running");
                     return;
                 }
 
@@ -150,8 +172,8 @@ namespace Networking {
         }
 
         public void Shutdown() {
-            if (Status == ServerStatus.SHUTDOWN) {
-                Debug.LogError("Server cannot shutdown when it has already been shutdown");
+            if (Status != ServerStatus.RUNNING) {
+                Debug.LogError("Server cannot shutdown when it is not running");
                 return;
             }
             Debug.Log("Shutting down server");
@@ -163,6 +185,7 @@ namespace Networking {
             }
             rootSocket.Close();
             Debug.Log("Server shutdown completed");
+            OnShutdown();
         }
 
         public void Disconnect(Guid connectionId) {

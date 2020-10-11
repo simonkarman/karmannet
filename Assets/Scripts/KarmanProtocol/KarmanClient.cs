@@ -9,11 +9,11 @@ namespace KarmanProtocol {
         private readonly string clientName;
         private readonly Client client;
 
-        public KarmanClient(string connectionString, string clientName) {
+        public KarmanClient(string connectionString, int defaultPort, string clientName) {
             this.clientName = clientName;
             clientId = Guid.NewGuid();
-            Debug.Log(string.Format("KarmanClient: Created a new KarmanClient with connectionString={0}, clientId={1}, clientName={2}", connectionString, clientId, clientName));
-            client = new Client(ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_PORT), OnPacketReceived);
+            Debug.Log(string.Format("KarmanClient: Created a new KarmanClient with connectionString={0} (defaultPort={1}), clientId={2}, clientName={3}", connectionString, defaultPort, clientId, clientName));
+            client = new Client(ConnectionString.Parse(connectionString, defaultPort), OnPacketReceived);
         }
 
         public void OnPacketReceived(Packet packet) {
@@ -22,14 +22,14 @@ namespace KarmanProtocol {
 
             } else if (packet is ServerInformationPacket serverInformationPacket) {
                 Debug.Log(string.Format(
-                    "Server send its information serverId={0}, protocolVersion={1}, and serverName={2}",
-                    serverInformationPacket.GetServerId(), serverInformationPacket.GetProtocolVersion(), serverInformationPacket.GetServerName()
+                    "Server send its information serverId={0} and protocolVersion={1}",
+                    serverInformationPacket.GetServerId(), serverInformationPacket.GetProtocolVersion()
                 ));
-                if (ServerFlow.protocolVersion != serverInformationPacket.GetProtocolVersion()) {
-                    Debug.LogError(string.Format("Disconnecting from server since it uses a different protocol version {0} than the client {1}", ServerFlow.protocolVersion, serverInformationPacket.GetProtocolVersion()));
+                if (KarmanServer.PROTOCOL_VERSION != serverInformationPacket.GetProtocolVersion()) {
+                    Debug.LogError(string.Format("Disconnecting from server since it uses a different protocol version {0} than the client {1}", KarmanServer.PROTOCOL_VERSION, serverInformationPacket.GetProtocolVersion()));
                     client.Disconnect();
                 } else {
-                    ClientInformationPacket provideUsernamePacket = new ClientInformationPacket(clientId, clientName);
+                    ClientInformationPacket provideUsernamePacket = new ClientInformationPacket(clientId);
                     client.Send(provideUsernamePacket);
                 }
 

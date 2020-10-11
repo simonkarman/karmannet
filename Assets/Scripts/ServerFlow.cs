@@ -1,22 +1,25 @@
 ﻿using KarmanProtocol;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class ServerFlow : MonoBehaviour {
-
-    public const int DEFAULT_PORT = 14641;
-    public const string protocolVersion = "0.0.1";
+    public const int DEFAULT_SERVER_PORT = 14641;
 
     [SerializeField]
-    private string serverName = default;
+    private int startDelay = 2;
 
     private KarmanServer server;
 
-    public Action<IReadOnlyList<IConnectedKarmanClient>> OnClientsChanged;
+    protected void Awake() {
+        server = new KarmanServer();
+    }
 
-    protected void Start() {
-        server = new KarmanServer(DEFAULT_PORT, protocolVersion, serverName, OnClientsChanged);
+    protected IEnumerator Start() {
+        Debug.Log(string.Format("Server is starting in {0} second(s)", startDelay));
+        yield return new WaitForSeconds(startDelay);
+        server.Start(DEFAULT_SERVER_PORT);
     }
 
     protected void OnDestroy() {
@@ -25,20 +28,8 @@ public class ServerFlow : MonoBehaviour {
         }
     }
 
-    public bool IsServerRunning() {
-        return server.IsRunning();
-    }
-
-    public Guid GetServerId() {
-        return server.id;
-    }
-
-    public string GetServerName() {
-        return server.name;
-    }
-
-    public string GetServerProtocolVersion() {
-        return server.protocolVersion;
+    public KarmanServer GetKarmanServer() {
+        return server;
     }
 
     public void ScheduleShutdown() {

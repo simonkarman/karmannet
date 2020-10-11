@@ -251,7 +251,7 @@ GameObject:
   - component: {fileID: 379445861}
   - component: {fileID: 379445860}
   m_Layer: 5
-  m_Name: Name
+  m_Name: Example Name
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -309,7 +309,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Example Server Name That is Quite long
+  m_Text: Example Karman Server
 --- !u!222 &379445861
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -601,9 +601,11 @@ MonoBehaviour:
   connectedClientUIPrefab: {fileID: 7925394617058847397, guid: 078f8403bcbd4c34781047f118265499, type: 3}
   serverFlow: {fileID: 1040089226}
   serverIdText: {fileID: 399748614}
-  serverNameText: {fileID: 379445860}
   serverProtocolText: {fileID: 1640284474}
   serverStatusText: {fileID: 1309712258}
+  scheduleShutdownButton: {fileID: 1919229507}
+  runningColor: {r: 0.30962977, g: 0.9245283, b: 0.49644262, a: 1}
+  shutdownColor: {r: 0.8490566, g: 0.1973737, b: 0.16420433, a: 1}
 --- !u!1 &776582012
 GameObject:
   m_ObjectHideFlags: 0
@@ -921,7 +923,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbaba9c1dc322174bb840a1c32c53bb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  serverName: An Example Server by Simon Karman
+  startDelay: 2
 --- !u!4 &1040089227
 Transform:
   m_ObjectHideFlags: 0
@@ -1100,7 +1102,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.30962977, g: 0.9245283, b: 0.49644262, a: 1}
+  m_Color: {r: 1, g: 0.6301059, b: 0.35294116, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1120,7 +1122,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: SERVER_STATUS
+  m_Text: Preparing
 --- !u!222 &1309712259
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1221,7 +1223,7 @@ GameObject:
   - component: {fileID: 1919229508}
   - component: {fileID: 1919229507}
   m_Layer: 5
-  m_Name: ShutdownButton
+  m_Name: ScheduleShutdownButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1285,7 +1287,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 1
+  m_Interactable: 0
   m_TargetGraphic: {fileID: 1919229508}
   m_OnClick:
     m_PersistentCalls:

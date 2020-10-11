@@ -9,7 +9,7 @@ public class ClientFlow : MonoBehaviour {
     public void Start() {
         string connectionString = PlayerPrefs.GetString(CONNECTION_STRING_PLAYER_PREFS_KEY, "localhost");
         string clientName = string.Format("User-" + (Random.value * 10000).ToString("0000"));
-        karmanClient = new KarmanClient(connectionString, clientName);
+        karmanClient = new KarmanClient(connectionString, ServerFlow.DEFAULT_SERVER_PORT, clientName);
     }
 
     private float connectedTimeAtLastSend = 0f;

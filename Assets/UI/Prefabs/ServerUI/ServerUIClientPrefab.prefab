@@ -87,7 +87,7 @@ GameObject:
   - component: {fileID: 7925394616205870758}
   - component: {fileID: 7925394616205870757}
   m_Layer: 5
-  m_Name: ClientName
+  m_Name: ClientConnected
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -153,7 +153,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Unknown Player
+  m_Text: Client (connected)
 --- !u!1 &7925394617058847397
 GameObject:
   m_ObjectHideFlags: 0
@@ -167,7 +167,7 @@ GameObject:
   - component: {fileID: 7925394617058847399}
   - component: {fileID: 5711205077244815136}
   m_Layer: 5
-  m_Name: ConnectedClientUIPrefab
+  m_Name: ServerUIClientPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -247,7 +247,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   clientIdText: {fileID: 7925394617093811121}
-  clientNameText: {fileID: 7925394616205870757}
+  clientConnectedText: {fileID: 7925394616205870757}
 --- !u!1 &7925394617093811127
 GameObject:
   m_ObjectHideFlags: 0

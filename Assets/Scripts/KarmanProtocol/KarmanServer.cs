@@ -1,37 +1,28 @@
 ﻿using Networking;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace KarmanProtocol {
-    public interface IConnectedKarmanClient {
-        Guid GetClientId();
-        string GetClientName();
-        bool IsConnected();
-    }
 
     public class KarmanServer {
-        private class ConnectedKarmanClient : IConnectedKarmanClient {
-            private readonly Guid clientId;
-            private readonly string clientName;
+        public const string PROTOCOL_VERSION = "0.0.1";
 
+        private class Client {
+            private readonly Guid clientId;
             private Guid connectionId;
 
-            public ConnectedKarmanClient(Guid clientId, string clientName) {
+            public Client(Guid clientId) {
                 this.clientId = clientId;
-                this.clientName = clientName;
             }
 
             public Guid GetClientId() {
                 return clientId;
             }
 
-            public string GetClientName() {
-                return clientName;
-            }
-
             public void SetConnectionId(Guid connectionId) {
-                Debug.Log(string.Format("Client {0} now uses Connection {1}", clientId, connectionId));
+                Debug.Log(string.Format("Client {0} now uses connection {1}", clientId, connectionId));
                 this.connectionId = connectionId;
             }
 
@@ -45,35 +36,50 @@ namespace KarmanProtocol {
         }
 
         public readonly Guid id;
-        public readonly string protocolVersion;
-        public readonly string name;
 
         private readonly Server server;
         private readonly Dictionary<Guid, Guid> connections = new Dictionary<Guid, Guid>();
-        private readonly Dictionary<Guid, ConnectedKarmanClient> clients = new Dictionary<Guid, ConnectedKarmanClient>();
-        private readonly Action OnClientsChanged;
+        private readonly Dictionary<Guid, Client> clients = new Dictionary<Guid, Client>();
 
-        public KarmanServer(int port, string protocolVersion, string name, Action<IReadOnlyList<IConnectedKarmanClient>> OnClientsChanged) {
-            this.OnClientsChanged = () => {
-                OnClientsChanged(new List<IConnectedKarmanClient>(clients.Values));
-            };
+        public Action OnRunningCallback;
+        public Action OnShutdownCallback;
+        public Action<Guid> OnClientJoinedCallback;
+        public Action<Guid> OnClientConnectedCallback;
+        public Action<Guid> OnClientDisconnectedCallback;
+        public Action<Guid> OnClientLeftCallback;
 
+        public KarmanServer() {
             id = Guid.NewGuid();
-            this.protocolVersion = protocolVersion;
-            this.name = name;
 
-            server = new Server(port, OnConnected, OnDisconnected, OnPacketReceived);
+            server = new Server();
+            server.OnRunningCallback += OnRunning;
+            server.OnShutdownCallback += OnShutdown;
+            server.OnConnectedCallback += OnConnected;
+            server.OnDisconnectedCallback += OnDisconnected;
+            server.OnPacketReceivedCallback += OnPacketReceived;
+        }
+
+        public void Start(int port) {
+            server.Start(port);
         }
 
         public bool IsRunning() {
             return server.Status == ServerStatus.RUNNING;
         }
 
+        private void OnRunning() {
+            OnRunningCallback();
+        }
+
+        private void OnShutdown() {
+            OnShutdownCallback();
+        }
+
         private void OnConnected(Guid connectionId) {
             Debug.Log(string.Format("KarmanServer: Connection {0} connected", connectionId));
 
             connections.Add(connectionId, Guid.Empty);
-            ServerInformationPacket serverInformationPacket = new ServerInformationPacket(id, protocolVersion, name);
+            ServerInformationPacket serverInformationPacket = new ServerInformationPacket(id, PROTOCOL_VERSION);
             server.Send(connectionId, serverInformationPacket);
         }
 
@@ -89,7 +95,7 @@ namespace KarmanProtocol {
                 return;
             }
 
-            if (!clients.TryGetValue(clientId, out ConnectedKarmanClient client)) {
+            if (!clients.TryGetValue(clientId, out Client client)) {
                 throw new InvalidOperationException(string.Format("Cannot disconnect connection {0} from client {1} because that client does not exist", connectionId, clientId));
             }
 
@@ -99,6 +105,7 @@ namespace KarmanProtocol {
             } else {
                 Debug.LogWarning(string.Format("KarmanServer: Connection {0} that disconnected was used for client {1}, but that client is already using a new connection {2}", connectionId, clientId, client.GetConnectionId()));
             }
+            OnClientDisconnectedCallback(clientId);
         }
 
         private void OnPacketReceived(Guid connectionId, Packet packet) {
@@ -118,24 +125,25 @@ namespace KarmanProtocol {
                 }
                 clientId = clientInformationPacket.GetClientId();
                 connections[connectionId] = clientId;
-                if (clients.TryGetValue(clientId, out ConnectedKarmanClient connectedClient)) {
+                if (clients.TryGetValue(clientId, out Client connectedClient)) {
                     if (connectedClient.GetConnectionId() != Guid.Empty) {
                         Debug.Log(string.Format("KarmanServer: Connection {0} is taking over a client {1} from connection {2}", connectionId, clientId, connectedClient.GetConnectionId()));
                         server.Disconnect(connectedClient.GetConnectionId());
                     } else {
-                        Debug.Log(string.Format("KarmanServer: Connection {0} is taking over a client {1} that did not longer have a connection", connectionId, clientId));
+                        Debug.Log(string.Format("KarmanServer: Connection {0} is taking over a client {1} that did no longer have a connection", connectionId, clientId));
                     }
                 } else {
                     Debug.Log(string.Format("KarmanServer: Connection {0} is creating a new client {1}", connectionId, clientId));
-                    connectedClient = new ConnectedKarmanClient(clientId, clientInformationPacket.GetClientName());
+                    connectedClient = new Client(clientId);
                     clients.Add(clientId, connectedClient);
+                    OnClientJoinedCallback(clientId);
                 }
                 connectedClient.SetConnectionId(connectionId);
-                OnClientsChanged();
+                OnClientConnectedCallback(clientId);
                 return;
             }
 
-            if (!clients.TryGetValue(clientId, out ConnectedKarmanClient client)) {
+            if (!clients.TryGetValue(clientId, out Client client)) {
                 server.Disconnect(connectionId);
                 throw new InvalidOperationException(string.Format("Cannot handle a {0} packet for connection {1} because the client {2} that is used for that connection does not exist", packet.GetType().Name, connectionId, clientId));
             }
@@ -149,8 +157,10 @@ namespace KarmanProtocol {
         }
 
         public void Shutdown() {
+            foreach (Guid clientId in new List<Client>(clients.Values).Select(client => client.GetClientId())) {
+                Kick(clientId);
+            }
             server.Shutdown();
-            OnClientsChanged();
         }
 
         public void Broadcast(Packet packet) {
@@ -163,26 +173,28 @@ namespace KarmanProtocol {
         }
 
         public void Send(Guid clientId, Packet packet) {
-            if (!clients.TryGetValue(clientId, out ConnectedKarmanClient client)) {
+            if (!clients.TryGetValue(clientId, out Client client)) {
                 throw new InvalidOperationException(string.Format("Cannot send a message to client {0}, because that client does not exist", clientId));
             }
             server.Send(client.GetConnectionId(), packet);
         }
 
         public void Kick(Guid clientId) {
-            if (!clients.TryGetValue(clientId, out ConnectedKarmanClient client)) {
+            if (!clients.TryGetValue(clientId, out Client client)) {
                 throw new InvalidOperationException(string.Format("Cannot kick client {0}, because that client does not exist", clientId));
             }
-            Guid connectionId = client.GetConnectionId();
-            connections[connectionId] = Guid.Empty;
             Debug.Log(string.Format("Removed all data of client {0}, so a reconnected cannot be made", clientId));
             clients.Remove(clientId);
-            OnClientsChanged();
-            try {
-                server.Disconnect(connectionId);
-            } catch (Exception) {
-                Debug.LogWarning(string.Format("Connection {0} of client {1} could not be disconnected, it probably already was disconnected before", connectionId, clientId));
+            Guid connectionId = client.GetConnectionId();
+            if (connectionId != Guid.Empty) {
+                connections[connectionId] = Guid.Empty;
+                try {
+                    server.Disconnect(connectionId);
+                } catch (Exception) {
+                    Debug.LogWarning(string.Format("Connection {0} of client {1} could not be disconnected", connectionId, clientId));
+                }
             }
+            OnClientLeftCallback(clientId);
         }
     }
 }
