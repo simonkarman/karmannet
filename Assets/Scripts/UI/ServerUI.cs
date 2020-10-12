@@ -50,9 +50,9 @@ public class ServerUI : MonoBehaviour {
 
     protected void Start() {
         karmanServer = serverFlow.GetKarmanServer();
+        serverProtocolText.text = KarmanServer.PROTOCOL_VERSION;
+        serverIdText.text = karmanServer.id.ToString();
         karmanServer.OnRunningCallback += () => {
-            serverIdText.text = karmanServer.id.ToString();
-            serverProtocolText.text = KarmanServer.PROTOCOL_VERSION;
             serverStatusText.text = "Running";
             serverStatusText.color = runningColor;
             scheduleShutdownButton.interactable = true;

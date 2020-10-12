@@ -8,14 +8,76 @@ namespace Networking {
     public class Client : IConnection {
         public static readonly int MAX_FRAME_SIZE = 256;
 
-        public readonly IPEndPoint serverEndpoint;
-        private readonly Socket socket;
         private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
         private readonly ByteFramer byteFramer;
         private readonly ByteSender byteSender;
         private readonly PacketFactory packetFactory;
 
+        public IPEndPoint serverEndpoint;
+        private Socket socket;
+
         public ConnectionStatus Status { get; private set; } = ConnectionStatus.NEW;
+
+        public Action OnConnectedCallback;
+        public Action OnDisconnectedCallback;
+        public Action<Packet> OnPacketReceivedCallback;
+
+        public Client() {
+            packetFactory = PacketFactory.BuildFromAllAssemblies();
+            Debug.Log(packetFactory.ToString());
+            ThreadManager.Activate();
+            byteFramer = new ByteFramer(MAX_FRAME_SIZE, OnFrameReceived);
+            byteSender = new ByteSender(this);
+        }
+
+        public void Start(IPEndPoint serverEndpoint) {
+            if (Status != ConnectionStatus.NEW) {
+                throw new InvalidOperationException("Cannot start a client that is already connected or has already left");
+            }
+            Debug.Log(string.Format("Start of setting up connection to {0}", serverEndpoint));
+            socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            var connectingThread = new Thread(() => {
+                Debug.Log(string.Format("Connecting to server at {0}", serverEndpoint));
+                socket.BeginConnect(serverEndpoint, new AsyncCallback(ConnectCallback), null);
+
+                connectDone.WaitOne();
+
+                if (socket.Connected) {
+                    Debug.Log("Succesfully connected to the server");
+                    Status = ConnectionStatus.CONNECTED;
+                    new ByteReceiver(this, OnBytesReceived);
+                    OnConnected();
+                } else {
+                    Debug.LogWarning("Failed to connect to the server");
+                    Status = ConnectionStatus.DISCONNECTED;
+                    OnDisonnected();
+                }
+            });
+            connectingThread.Start();
+        }
+
+        private void OnConnected() {
+            ThreadManager.ExecuteOnMainThread(() => {
+                OnConnectedCallback();
+            });
+        }
+
+        private void OnDisonnected() {
+            ThreadManager.ExecuteOnMainThread(() => {
+                OnDisconnectedCallback();
+            });
+        }
+
+        private void OnBytesReceived(byte[] bytes) {
+            byteFramer.Append(bytes);
+        }
+
+        private void OnFrameReceived(byte[] bytes) {
+            ThreadManager.ExecuteOnMainThread(() => {
+                Packet packet = packetFactory.FromBytes(bytes);
+                OnPacketReceivedCallback(packet);
+            });
+        }
 
         public Socket GetSocket() {
             return socket;
@@ -27,39 +89,6 @@ namespace Networking {
 
         public bool IsConnected() {
             return Status == ConnectionStatus.CONNECTED;
-        }
-
-        public Client(IPEndPoint serverEndpoint, Action<Packet> OnPacketReceived) {
-            Debug.Log(string.Format("Start of setting up connection to {0}", serverEndpoint));
-            packetFactory = PacketFactory.BuildFromAllAssemblies();
-            Debug.Log(packetFactory.ToString());
-            ThreadManager.Activate();
-            socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            byteFramer = new ByteFramer(MAX_FRAME_SIZE, (byte[] bytes) => {
-                ThreadManager.ExecuteOnMainThread(() => {
-                    OnPacketReceived(packetFactory.FromBytes(bytes));
-                });
-            });
-            byteSender = new ByteSender(this);
-
-            var connectingThread = new Thread(() => {
-                Debug.Log(string.Format("Connecting to server at {0}", serverEndpoint));
-                socket.BeginConnect(serverEndpoint, new AsyncCallback(ConnectCallback), null);
-
-                connectDone.WaitOne();
-
-                if (socket.Connected) {
-                    Debug.Log("Succesfully connected to the server");
-                    Status = ConnectionStatus.CONNECTED;
-                    new ByteReceiver(this, (bytes) => {
-                        byteFramer.Append(bytes);
-                    });
-                } else {
-                    Debug.LogWarning("Failed to connect to the server");
-                    Status = ConnectionStatus.DISCONNECTED;
-                }
-            });
-            connectingThread.Start();
         }
 
         private void ConnectCallback(IAsyncResult ar) {
@@ -95,6 +124,7 @@ namespace Networking {
             Status = ConnectionStatus.DISCONNECTED;
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();
+            OnDisonnected();
             Debug.Log("Successfully disconnected from the server");
         }
     }

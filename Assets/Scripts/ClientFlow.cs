@@ -6,10 +6,23 @@ public class ClientFlow : MonoBehaviour {
 
     private KarmanClient karmanClient;
 
+    protected void Awake() {
+        karmanClient = new KarmanClient();
+    }
+
     public void Start() {
         string connectionString = PlayerPrefs.GetString(CONNECTION_STRING_PLAYER_PREFS_KEY, "localhost");
-        string clientName = string.Format("User-" + (Random.value * 10000).ToString("0000"));
-        karmanClient = new KarmanClient(connectionString, ServerFlow.DEFAULT_SERVER_PORT, clientName);
+        karmanClient.Start(connectionString, ServerFlow.DEFAULT_SERVER_PORT);
+    }
+
+    public void OnDestroy() {
+        if (karmanClient.IsConnected()) {
+            karmanClient.Leave();
+        }
+    }
+
+    public KarmanClient GetKarmanClient() {
+        return karmanClient;
     }
 
     private float connectedTimeAtLastSend = 0f;
@@ -21,14 +34,10 @@ public class ClientFlow : MonoBehaviour {
                 connectedTimeAtLastSend = Time.timeSinceLevelLoad;
                 karmanClient.Send(new MessagePacket(string.Format(
                     "{0} has been connected for {1} second(s).",
-                    karmanClient.GetClientName(),
+                    karmanClient.id,
                     connectedTime.ToString("0")
                 )));
             }
         }
-    }
-
-    public void OnDestroy() {
-        karmanClient.Leave();
     }
 }

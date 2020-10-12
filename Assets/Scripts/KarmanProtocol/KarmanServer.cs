@@ -5,9 +5,8 @@ using System.Linq;
 using UnityEngine;
 
 namespace KarmanProtocol {
-
     public class KarmanServer {
-        public const string PROTOCOL_VERSION = "0.0.1";
+        public const string PROTOCOL_VERSION = "0.0.2";
 
         private class Client {
             private readonly Guid clientId;
@@ -151,6 +150,7 @@ namespace KarmanProtocol {
 
             if (packet is LeavePacket) {
                 Kick(clientId);
+
             } else {
                 Debug.LogWarning(string.Format("KarmanServer: Did not handle a received packet that is of type {0} for client {1}", packet.GetType().Name, client.GetClientId()));
             }
@@ -161,6 +161,28 @@ namespace KarmanProtocol {
                 Kick(clientId);
             }
             server.Shutdown();
+        }
+
+        public void Kick(Guid clientId) {
+            if (!clients.TryGetValue(clientId, out Client client)) {
+                Debug.LogWarning(string.Format("Cannot kick client {0}, because that client does not exist", clientId));
+                return;
+            }
+            Debug.Log(string.Format("Removed all data of client {0}, so a reconnected cannot be made", clientId));
+            clients.Remove(clientId);
+
+            Guid connectionId = client.GetConnectionId();
+            if (connectionId != Guid.Empty) {
+                connections[connectionId] = Guid.Empty;
+                try {
+                    server.Send(connectionId, new LeavePacket());
+                    System.Threading.Thread.Sleep(100); // TODO: fix this.
+                    server.Disconnect(connectionId);
+                } catch (Exception) {
+                    Debug.LogWarning(string.Format("Connection {0} of client {1} could not be disconnected", connectionId, clientId));
+                }
+            }
+            OnClientLeftCallback(clientId);
         }
 
         public void Broadcast(Packet packet) {
@@ -177,24 +199,6 @@ namespace KarmanProtocol {
                 throw new InvalidOperationException(string.Format("Cannot send a message to client {0}, because that client does not exist", clientId));
             }
             server.Send(client.GetConnectionId(), packet);
-        }
-
-        public void Kick(Guid clientId) {
-            if (!clients.TryGetValue(clientId, out Client client)) {
-                throw new InvalidOperationException(string.Format("Cannot kick client {0}, because that client does not exist", clientId));
-            }
-            Debug.Log(string.Format("Removed all data of client {0}, so a reconnected cannot be made", clientId));
-            clients.Remove(clientId);
-            Guid connectionId = client.GetConnectionId();
-            if (connectionId != Guid.Empty) {
-                connections[connectionId] = Guid.Empty;
-                try {
-                    server.Disconnect(connectionId);
-                } catch (Exception) {
-                    Debug.LogWarning(string.Format("Connection {0} of client {1} could not be disconnected", connectionId, clientId));
-                }
-            }
-            OnClientLeftCallback(clientId);
         }
     }
 }

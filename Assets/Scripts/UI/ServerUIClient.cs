@@ -19,6 +19,6 @@ public class ServerUIClient : MonoBehaviour {
     }
 
     public void Kick() {
-        serverFlow.Kick(clientId);
+        serverFlow.GetKarmanServer().Kick(clientId);
     }
 }

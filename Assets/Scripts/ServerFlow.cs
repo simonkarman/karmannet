@@ -43,10 +43,4 @@ public class ServerFlow : MonoBehaviour {
         yield return new WaitForSeconds(shutdownDelay);
         server.Shutdown();
     }
-
-    public void Kick(Guid clientId) {
-        MessagePacket messagePacket = new MessagePacket("You were kicked by the server!");
-        server.Send(clientId, messagePacket);
-        server.Kick(clientId);
-    }
 }
