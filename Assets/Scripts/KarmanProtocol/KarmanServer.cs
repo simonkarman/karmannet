@@ -6,23 +6,32 @@ using UnityEngine;
 
 namespace KarmanProtocol {
     public class KarmanServer {
-        public const string PROTOCOL_VERSION = "0.0.2";
+        public const string PROTOCOL_VERSION = "0.0.3";
 
         private class Client {
             private readonly Guid clientId;
+            private readonly Guid clientSecret;
             private Guid connectionId;
 
-            public Client(Guid clientId) {
+            public Client(Guid clientId, Guid clientSecret) {
                 this.clientId = clientId;
+                this.clientSecret = clientSecret;
             }
 
             public Guid GetClientId() {
                 return clientId;
             }
 
-            public void SetConnectionId(Guid connectionId) {
-                Debug.Log(string.Format("Client {0} now uses connection {1}", clientId, connectionId));
+            public void RemoveConnectionId() {
+                connectionId = Guid.Empty;
+            }
+
+            public bool TrySetConnectionId(Guid connectionId, Guid clientSecret) {
+                if (!clientSecret.Equals(this.clientSecret)) {
+                    return false;
+                }
                 this.connectionId = connectionId;
+                return true;
             }
 
             public Guid GetConnectionId() {
@@ -100,7 +109,8 @@ namespace KarmanProtocol {
 
             if (client.GetConnectionId() == connectionId) {
                 Debug.LogWarning(string.Format("KarmanServer: Connection {0} dropped while it was still connected to client {1} (client is still available for reconnection attempts)", connectionId, clientId));
-                client.SetConnectionId(Guid.Empty);
+                client.RemoveConnectionId();
+
             } else {
                 Debug.LogWarning(string.Format("KarmanServer: Connection {0} that disconnected was used for client {1}, but that client is already using a new connection {2}", connectionId, clientId, client.GetConnectionId()));
             }
@@ -123,22 +133,27 @@ namespace KarmanProtocol {
                     throw new InvalidOperationException(string.Format("Connection {0} cannot create a new client {1} because the connection already points to client {2}", connectionId, clientInformationPacket.GetClientId(), clientId));
                 }
                 clientId = clientInformationPacket.GetClientId();
-                connections[connectionId] = clientId;
+                Guid previousConnectionId = Guid.Empty;
                 if (clients.TryGetValue(clientId, out Client connectedClient)) {
-                    if (connectedClient.GetConnectionId() != Guid.Empty) {
-                        Debug.Log(string.Format("KarmanServer: Connection {0} is taking over a client {1} from connection {2}", connectionId, clientId, connectedClient.GetConnectionId()));
-                        server.Disconnect(connectedClient.GetConnectionId());
-                    } else {
-                        Debug.Log(string.Format("KarmanServer: Connection {0} is taking over a client {1} that did no longer have a connection", connectionId, clientId));
-                    }
+                    Debug.Log(string.Format("KarmanServer: Connection {0} is taking over an already existing client {1}", connectionId, clientId));
+                    previousConnectionId = connectedClient.GetConnectionId();
                 } else {
                     Debug.Log(string.Format("KarmanServer: Connection {0} is creating a new client {1}", connectionId, clientId));
-                    connectedClient = new Client(clientId);
+                    connectedClient = new Client(clientId, clientInformationPacket.GetClientSecret());
                     clients.Add(clientId, connectedClient);
                     OnClientJoinedCallback(clientId);
                 }
-                connectedClient.SetConnectionId(connectionId);
-                OnClientConnectedCallback(clientId);
+                if (connectedClient.TrySetConnectionId(connectionId, clientInformationPacket.GetClientSecret())) {
+                    if (previousConnectionId != Guid.Empty) {
+                        Debug.Log(string.Format("KarmanServer: Disconnecting previous connection {0}, since connection {1} is taking over a client {2}", previousConnectionId, connectionId, clientId));
+                        server.Disconnect(previousConnectionId);
+                    }
+                    connections[connectionId] = clientId;
+                    Debug.Log(string.Format("Client {0} now uses connection {1}", clientId, connectionId));
+                    OnClientConnectedCallback(clientId);
+                } else {
+                    Debug.LogWarning(string.Format("Aborted connection {0} taking over client {1} since an invalid secret was provided", connectionId, clientId));
+                }
                 return;
             }
 

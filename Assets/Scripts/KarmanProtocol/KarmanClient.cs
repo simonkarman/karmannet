@@ -9,6 +9,7 @@ namespace KarmanProtocol {
         private Client client;
 
         public readonly Guid id;
+        public readonly Guid secret;
         private IPEndPoint endpoint;
         private bool hasJoined = false;
         private bool left = false;
@@ -21,6 +22,7 @@ namespace KarmanProtocol {
 
         public KarmanClient() {
             id = Guid.NewGuid();
+            secret = Guid.NewGuid();
             SetupClient();
         }
 
@@ -88,7 +90,7 @@ namespace KarmanProtocol {
                     ));
                     Leave();
                 } else {
-                    ClientInformationPacket provideUsernamePacket = new ClientInformationPacket(id);
+                    ClientInformationPacket provideUsernamePacket = new ClientInformationPacket(id, secret);
                     client.Send(provideUsernamePacket);
                 }
 

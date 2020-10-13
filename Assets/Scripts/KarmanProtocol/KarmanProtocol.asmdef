@@ -1,0 +1,15 @@
+{
+    "name": "KarmanProtocol",
+    "references": [
+        "GUID:27bd693cc242f3c49bb61edff92c163f"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

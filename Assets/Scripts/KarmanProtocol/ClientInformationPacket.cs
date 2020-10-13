@@ -1,15 +1,20 @@
-﻿using System;
+﻿using Networking;
+using System;
 
 namespace KarmanProtocol {
-    public class ClientInformationPacket : Networking.Packet {
+    public class ClientInformationPacket : Packet {
         private readonly Guid clientId;
+        private readonly Guid clientSecret;
 
         public ClientInformationPacket(byte[] bytes) : base(bytes) {
-            clientId = new Guid(bytes);
+            byte[][] split = ByteHelper.Split(bytes);
+            clientId = new Guid(split[0]);
+            clientId = new Guid(split[1]);
         }
 
-        public ClientInformationPacket(Guid clientId) : base(clientId.ToByteArray()) {
+        public ClientInformationPacket(Guid clientId, Guid clientSecret) : base(ByteHelper.Merge(clientId.ToByteArray(), clientSecret.ToByteArray())) {
             this.clientId = clientId;
+            this.clientSecret = clientSecret;
         }
 
         public override void Validate() {
@@ -20,6 +25,10 @@ namespace KarmanProtocol {
 
         public Guid GetClientId() {
             return clientId;
+        }
+
+        public Guid GetClientSecret() {
+            return clientSecret;
         }
     }
 }
