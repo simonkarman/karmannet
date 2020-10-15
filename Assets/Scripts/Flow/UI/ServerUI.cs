@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class ServerUI : MonoBehaviour {
@@ -90,6 +91,10 @@ public class ServerUI : MonoBehaviour {
 
     public void ScheduleShutdown() {
         serverFlow.ScheduleShutdown();
+    }
+
+    public void BackToMainMenu() {
+        SceneManager.LoadScene("MainMenu");
     }
 }
 

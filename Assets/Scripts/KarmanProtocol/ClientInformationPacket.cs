@@ -7,12 +7,13 @@ namespace KarmanProtocol {
         private readonly Guid clientSecret;
 
         public ClientInformationPacket(byte[] bytes) : base(bytes) {
-            byte[][] split = ByteHelper.Split(bytes);
-            clientId = new Guid(split[0]);
-            clientId = new Guid(split[1]);
+            clientId = ReadGuid();
+            clientSecret = ReadGuid();
         }
 
-        public ClientInformationPacket(Guid clientId, Guid clientSecret) : base(ByteHelper.Merge(clientId.ToByteArray(), clientSecret.ToByteArray())) {
+        public ClientInformationPacket(Guid clientId, Guid clientSecret) : base(
+            Bytes.Pack(Bytes.Of(clientId), Bytes.Of(clientSecret))
+        ) {
             this.clientId = clientId;
             this.clientSecret = clientSecret;
         }

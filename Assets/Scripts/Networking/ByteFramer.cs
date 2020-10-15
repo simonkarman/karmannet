@@ -3,7 +3,7 @@
 namespace Networking {
     public class ByteFramer {
         private readonly int maxPacketSize;
-        private readonly Action<byte[]> onFrameComplete;
+        private readonly Action<byte[]> onFrameCompleted;
 
         private readonly byte[] prefixBuffer;
         private byte[] dataBuffer = null;
@@ -23,7 +23,7 @@ namespace Networking {
 
         public ByteFramer(int maxPacketSize, Action<byte[]> onFrameCompleted) {
             this.maxPacketSize = maxPacketSize;
-            this.onFrameComplete = onFrameCompleted;
+            this.onFrameCompleted = onFrameCompleted;
             prefixBuffer = new byte[sizeof(int)];
         }
 
@@ -55,14 +55,14 @@ namespace Networking {
                 }
 
                 if (frameSize == 0) {
-                    onFrameComplete(new byte[0]);
+                    onFrameCompleted(new byte[0]);
                     bytesInCurrentBuffer = 0;
                 } else {
                     dataBuffer = new byte[frameSize];
                     bytesInCurrentBuffer = 0;
                 }
             } else {
-                onFrameComplete(dataBuffer);
+                onFrameCompleted(dataBuffer);
                 dataBuffer = null;
                 bytesInCurrentBuffer = 0;
             }

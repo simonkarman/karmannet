@@ -21,7 +21,7 @@ namespace Networking {
         }
 
         private void InitiateReceiveLoop() {
-            Debug.Log(string.Format("Ready for incoming frames from {0}", connection.GetConnectedWithIdentifier()));
+            //Debug.Log(string.Format("Ready for incoming frames from {0}", connection.GetConnectedWithIdentifier()));
             while (true) {
                 receiveDone.Reset();
                 if (!connection.IsConnected()) {

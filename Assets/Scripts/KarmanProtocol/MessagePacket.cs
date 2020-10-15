@@ -1,20 +1,20 @@
-﻿using System.Text;
+﻿using Networking;
 
 namespace KarmanProtocol {
-    public class MessagePacket : Networking.Packet {
+    public class MessagePacket : Packet {
         private readonly string message;
 
         public MessagePacket(byte[] bytes) : base(bytes) {
-            message = Encoding.ASCII.GetString(bytes);
+            message = ReadString();
         }
 
-        public MessagePacket(string message) : base(Encoding.ASCII.GetBytes(message)) {
+        public MessagePacket(string message) : base(
+            Bytes.Of(message)
+        ) {
             this.message = message;
         }
 
-        public override void Validate() {
-            // No validation needed for the message
-        }
+        public override void Validate() { }
 
         public string GetMessage() {
             return message;

@@ -2,8 +2,14 @@
 using UnityEngine;
 
 public class ClientFlow : MonoBehaviour {
-    public const string CONNECTION_STRING_PLAYER_PREFS_KEY = "connectionString";
+    public const string CONNECTION_STRING_PLAYER_PREFS_KEY = "client-flow:connection-string";
 
+    [SerializeField]
+    private bool sendConnectionMessages = false;
+    [SerializeField]
+    private float sendConnectionMessagesInterval = 5f;
+
+    private float connectedTimeAtLastSend = 0f;
     private KarmanClient karmanClient;
 
     protected void Awake() {
@@ -25,12 +31,10 @@ public class ClientFlow : MonoBehaviour {
         return karmanClient;
     }
 
-    private float connectedTimeAtLastSend = 0f;
     public void Update() {
-        if (karmanClient.IsConnected()) {
-            float sendInterval = 5f;
+        if (karmanClient.IsConnected() && sendConnectionMessages) {
             float connectedTime = Time.timeSinceLevelLoad;
-            if (connectedTime > connectedTimeAtLastSend + sendInterval) {
+            if (connectedTime > connectedTimeAtLastSend + sendConnectionMessagesInterval) {
                 connectedTimeAtLastSend = Time.timeSinceLevelLoad;
                 karmanClient.Send(new MessagePacket(string.Format(
                     "{0} has been connected for {1} second(s).",

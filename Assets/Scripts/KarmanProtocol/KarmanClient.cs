@@ -19,6 +19,7 @@ namespace KarmanProtocol {
         public Action OnConnectedCallback;
         public Action OnDisconnectedCallback;
         public Action OnLeftCallback;
+        public Action<Packet> OnPacketReceivedCallback;
 
         public KarmanClient() {
             id = Guid.NewGuid();
@@ -98,7 +99,8 @@ namespace KarmanProtocol {
                 Leave();
 
             } else {
-                Debug.LogWarning(string.Format("KarmanClient: Did not handle a received packet that is of type {0}", packet.GetType().Name));
+                //Debug.LogWarning(string.Format("KarmanClient: Did not handle a received packet that is of type {0}", packet.GetType().Name));
+                OnPacketReceivedCallback(packet);
             }
         }
 

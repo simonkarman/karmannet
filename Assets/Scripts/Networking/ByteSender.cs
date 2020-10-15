@@ -18,13 +18,13 @@ namespace Networking {
                 return;
             }*/
 
-            Debug.Log(string.Format(
+            /*Debug.Log(string.Format(
                 "Sending a frame of {0} byte(s) to {1}: {2}{3}",
                 frame.Length,
                 connection.GetConnectedWithIdentifier(),
                 BitConverter.ToString(frame, 0, Math.Min(16, frame.Length)),
                 frame.Length > 16 ? "-.." : string.Empty
-            ));
+            ));*/
             connection.GetSocket().BeginSend(frame, 0, frame.Length, 0, new AsyncCallback(SendCallback), null);
         }
 

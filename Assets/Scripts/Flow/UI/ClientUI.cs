@@ -1,5 +1,6 @@
 ﻿using KarmanProtocol;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class ClientUI : MonoBehaviour {
@@ -47,5 +48,9 @@ public class ClientUI : MonoBehaviour {
 
     public void Leave() {
         karmanClient.Leave();
+    }
+
+    public void BackToMainMenu() {
+        SceneManager.LoadScene("MainMenu");
     }
 }

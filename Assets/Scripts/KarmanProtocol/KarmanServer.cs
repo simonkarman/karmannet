@@ -55,6 +55,7 @@ namespace KarmanProtocol {
         public Action<Guid> OnClientConnectedCallback;
         public Action<Guid> OnClientDisconnectedCallback;
         public Action<Guid> OnClientLeftCallback;
+        public Action<Guid, Packet> OnClientPackedReceivedCallback;
 
         public KarmanServer() {
             id = Guid.NewGuid();
@@ -134,6 +135,7 @@ namespace KarmanProtocol {
                 }
                 clientId = clientInformationPacket.GetClientId();
                 Guid previousConnectionId = Guid.Empty;
+                bool newPlayer = false;
                 if (clients.TryGetValue(clientId, out Client connectedClient)) {
                     Debug.Log(string.Format("KarmanServer: Connection {0} is taking over an already existing client {1}", connectionId, clientId));
                     previousConnectionId = connectedClient.GetConnectionId();
@@ -141,7 +143,7 @@ namespace KarmanProtocol {
                     Debug.Log(string.Format("KarmanServer: Connection {0} is creating a new client {1}", connectionId, clientId));
                     connectedClient = new Client(clientId, clientInformationPacket.GetClientSecret());
                     clients.Add(clientId, connectedClient);
-                    OnClientJoinedCallback(clientId);
+                    newPlayer = true;
                 }
                 if (connectedClient.TrySetConnectionId(connectionId, clientInformationPacket.GetClientSecret())) {
                     if (previousConnectionId != Guid.Empty) {
@@ -150,6 +152,9 @@ namespace KarmanProtocol {
                     }
                     connections[connectionId] = clientId;
                     Debug.Log(string.Format("Client {0} now uses connection {1}", clientId, connectionId));
+                    if (newPlayer) {
+                        OnClientJoinedCallback(clientId);
+                    }
                     OnClientConnectedCallback(clientId);
                 } else {
                     Debug.LogWarning(string.Format("Aborted connection {0} taking over client {1} since an invalid secret was provided", connectionId, clientId));
@@ -167,7 +172,8 @@ namespace KarmanProtocol {
                 Kick(clientId);
 
             } else {
-                Debug.LogWarning(string.Format("KarmanServer: Did not handle a received packet that is of type {0} for client {1}", packet.GetType().Name, client.GetClientId()));
+                OnClientPackedReceivedCallback(clientId, packet);
+                //Debug.LogWarning(string.Format("KarmanServer: Did not handle a received packet that is of type {0} for client {1}", packet.GetType().Name, client.GetClientId()));
             }
         }
 
@@ -200,9 +206,9 @@ namespace KarmanProtocol {
             OnClientLeftCallback(clientId);
         }
 
-        public void Broadcast(Packet packet) {
+        public void Broadcast(Packet packet, Guid exceptClientId = default) {
             foreach (var client in clients.Values) {
-                if (client.GetConnectionId() == Guid.Empty) {
+                if (client.GetConnectionId() == Guid.Empty || client.GetConnectionId() == exceptClientId) {
                     continue;
                 }
                 server.Send(client.GetConnectionId(), packet);
