@@ -208,7 +208,7 @@ namespace KarmanProtocol {
 
         public void Broadcast(Packet packet, Guid exceptClientId = default) {
             foreach (var client in clients.Values) {
-                if (client.GetConnectionId() == Guid.Empty || client.GetConnectionId() == exceptClientId) {
+                if (client.GetConnectionId() == Guid.Empty || client.GetClientId() == exceptClientId) {
                     continue;
                 }
                 server.Send(client.GetConnectionId(), packet);

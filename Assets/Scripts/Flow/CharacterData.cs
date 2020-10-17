@@ -7,16 +7,7 @@ public class CharacterData {
     private readonly Color color;
     private readonly GameObject instance;
 
-    private Vector2 syncedPosition;
-    public Vector2 Position {
-        get {
-            return instance.transform.position;
-        }
-        private set {
-            syncedPosition = value;
-            instance.transform.position = value;
-        }
-    }
+    private Vector2 lastSetPosition;
 
     public CharacterData(Guid id, Guid clientId, Vector2 position, Color color, GameObject instance) {
         this.id = id;
@@ -25,11 +16,11 @@ public class CharacterData {
         this.instance = instance;
         instance.GetComponent<Character>().SetColor(color);
         instance.name = "Character " + id.ToString();
-        Position = position;
+        SetPosition(position);
     }
 
     public CharacterSpawnPacket GetSpawnPacket() {
-        return new CharacterSpawnPacket(id, clientId, Position, color);
+        return new CharacterSpawnPacket(id, clientId, GetActivePosition(), color);
     }
 
     public CharacterDestroyPacket GetDestroyPacket() {
@@ -37,19 +28,24 @@ public class CharacterData {
     }
 
     public bool RequestPositionSyncCheck() {
-        if ((syncedPosition - Position).sqrMagnitude > 0.001f) {
-            syncedPosition = Position;
+        if ((lastSetPosition - GetActivePosition()).sqrMagnitude > 0.001f) {
+            lastSetPosition = GetActivePosition();
             return true;
         }
         return false;
     }
 
     public CharacterUpdatePositionPacket GetUpdatePositionPacket() {
-        return new CharacterUpdatePositionPacket(id, Position);
+        return new CharacterUpdatePositionPacket(id, GetActivePosition());
+    }
+
+    public Vector2 GetActivePosition() {
+        return instance.transform.position;
     }
 
     public void SetPosition(Vector2 position) {
-        Position = position;
+        lastSetPosition = position;
+        instance.transform.position = position;
     }
 
     public Guid GetId() {

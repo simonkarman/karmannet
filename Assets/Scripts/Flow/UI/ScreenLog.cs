@@ -20,7 +20,7 @@ public class ScreenLog : MonoBehaviour {
     private bool visible = true;
     private int currentIndex = -1;
     private ScreenLogLine[] lines;
-    private int duplicationCounter;
+    private int duplicationCounter = 1;
     private string latestLogMessage;
     private LogType latestLogType;
 
@@ -54,7 +54,7 @@ public class ScreenLog : MonoBehaviour {
             currentIndex += 1;
             currentIndex %= maxNumberOfLines;
 
-            duplicationCounter = 0;
+            duplicationCounter = 1;
             latestLogMessage = logMessage;
             latestLogType = logType;
 
