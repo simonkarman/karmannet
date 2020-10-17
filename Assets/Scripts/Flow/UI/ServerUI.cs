@@ -19,6 +19,8 @@ public class ServerUI : MonoBehaviour {
     [SerializeField]
     private Text serverStatusText = default;
     [SerializeField]
+    private Text numberOfClientsConnectedText = default;
+    [SerializeField]
     private Button scheduleShutdownButton = default;
     [SerializeField]
     private Color runningColor = Color.green;
@@ -48,6 +50,7 @@ public class ServerUI : MonoBehaviour {
         }
     }
     private readonly Dictionary<Guid, ServerUIClientInfo> clients = new Dictionary<Guid, ServerUIClientInfo>();
+    private bool showClients = true;
 
     protected void Start() {
         karmanServer = serverFlow.GetKarmanServer();
@@ -83,10 +86,11 @@ public class ServerUI : MonoBehaviour {
                 playerUI.transform.SetAsLastSibling();
             } else {
                 playerUI = playerUIs[i];
-                playerUI.gameObject.SetActive(true);
+                playerUI.gameObject.SetActive(showClients);
             }
             playerUI.SetFrom(serverFlow, clients[i].GetClientId(), clients[i].IsConnected());
         }
+        numberOfClientsConnectedText.text = string.Format("{0} client(s) connected", clients.Count);
     }
 
     public void ScheduleShutdown() {
@@ -95,6 +99,14 @@ public class ServerUI : MonoBehaviour {
 
     public void BackToMainMenu() {
         SceneManager.LoadScene("MainMenu");
+    }
+
+    public void ToggleShowClients() {
+        showClients = !showClients;
+        ServerUIClient[] playerUIs = connectedClientUIParent.GetComponentsInChildren<ServerUIClient>(true);
+        for (int i = 0; i < clients.Count; i++) {
+            playerUIs[i].gameObject.SetActive(showClients);
+        }
     }
 }
 

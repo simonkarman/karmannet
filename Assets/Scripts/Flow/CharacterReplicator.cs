@@ -34,8 +34,12 @@ public class CharacterReplicator : MonoBehaviour {
         characters.Add(packet.GetId(), new CharacterData(
             packet.GetId(), packet.GetClientId(), packet.GetPosition(), packet.GetColor(), instance
         ));
+        Character character = instance.GetComponent<Character>();
         if (karmanClient.id.Equals(packet.GetClientId())) {
-            instance.GetComponent<Character>().enabled = true;
+            character.enabled = true;
+        } else {
+            Destroy(character.GetComponent<Rigidbody2D>());
+            Destroy(character);
         }
     }
 
@@ -52,7 +56,7 @@ public class CharacterReplicator : MonoBehaviour {
 
     private void OnLeft() {
         foreach (var character in characters.Values) {
-            character.GetDestroyPacket();
+            character.Destroy();
         }
         characters.Clear();
     }
