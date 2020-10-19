@@ -25,6 +25,18 @@ namespace Networking {
             marker += amount;
         }
 
+        protected int ReadInt() {
+            int value = Bytes.GetInt32(bytes, marker);
+            marker += 4;
+            return value;
+        }
+
+        protected float ReadFloat() {
+            float value = Bytes.GetFloat(bytes, marker);
+            marker += 4;
+            return value;
+        }
+
         protected string ReadString(int count = -1) {
             string value = Bytes.GetString(bytes, marker, count);
             if (count < 0) {

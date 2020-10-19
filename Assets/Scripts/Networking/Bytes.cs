@@ -53,6 +53,14 @@ namespace Networking {
             }
         }
 
+        public static byte[] Of(int integer) {
+            return BitConverter.GetBytes(integer);
+        }
+
+        public static byte[] Of(float value) {
+            return BitConverter.GetBytes(value);
+        }
+
         public static byte[] Of(string text) {
             return Encoding.UTF8.GetBytes(text);
         }
@@ -61,18 +69,18 @@ namespace Networking {
             return guid.ToByteArray();
         }
 
-        public static byte[] Of(Vector2 location) {
+        public static byte[] Of(Vector2 vector2) {
             byte[] bytes = new byte[8];
-            Array.Copy(BitConverter.GetBytes(location.x), 0, bytes, 0, 4);
-            Array.Copy(BitConverter.GetBytes(location.y), 0, bytes, 4, 4);
+            Array.Copy(BitConverter.GetBytes(vector2.x), 0, bytes, 0, 4);
+            Array.Copy(BitConverter.GetBytes(vector2.y), 0, bytes, 4, 4);
             return bytes;
         }
 
-        public static byte[] Of(Vector3 location) {
+        public static byte[] Of(Vector3 vector3) {
             byte[] bytes = new byte[12];
-            Array.Copy(BitConverter.GetBytes(location.x), 0, bytes, 0, 4);
-            Array.Copy(BitConverter.GetBytes(location.y), 0, bytes, 4, 4);
-            Array.Copy(BitConverter.GetBytes(location.z), 0, bytes, 8, 4);
+            Array.Copy(BitConverter.GetBytes(vector3.x), 0, bytes, 0, 4);
+            Array.Copy(BitConverter.GetBytes(vector3.y), 0, bytes, 4, 4);
+            Array.Copy(BitConverter.GetBytes(vector3.z), 0, bytes, 8, 4);
             return bytes;
         }
 
@@ -94,6 +102,12 @@ namespace Networking {
             return bytes;
         }
 
+        public static Vector2 GetVector2(byte[] bytes, int startIndex = 0) {
+            float x = BitConverter.ToSingle(bytes, startIndex);
+            float y = BitConverter.ToSingle(bytes, startIndex + 4);
+            return new Vector2(x, y);
+        }
+
         public static string GetString(byte[] bytes, int startIndex = 0, int count = -1) {
             if (count < 0) {
                 count = bytes.Length - startIndex;
@@ -107,10 +121,12 @@ namespace Networking {
             return new Guid(guidBytes);
         }
 
-        public static Vector2 GetVector2(byte[] bytes, int startIndex = 0) {
-            float x = BitConverter.ToSingle(bytes, startIndex);
-            float y = BitConverter.ToSingle(bytes, startIndex + 4);
-            return new Vector2(x, y);
+        public static int GetInt32(byte[] bytes, int startIndex = 0) {
+            return BitConverter.ToInt32(bytes, startIndex);
+        }
+
+        public static float GetFloat(byte[] bytes, int startIndex = 0) {
+            return BitConverter.ToSingle(bytes, startIndex);
         }
 
         public static Vector3 GetVector3(byte[] bytes, int startIndex = 0) {

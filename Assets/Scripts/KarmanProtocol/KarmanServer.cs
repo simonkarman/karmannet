@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace KarmanProtocol {
     public class KarmanServer {
-        public const string PROTOCOL_VERSION = "0.0.3";
+        public const string PROTOCOL_VERSION = "0.0.4";
 
         private class Client {
             private readonly Guid clientId;

@@ -31,16 +31,20 @@ public class CharacterReplicator : MonoBehaviour {
     private void OnCharacterSpawnPacketReceived(CharacterSpawnPacket packet) {
         Debug.Log("Received a CharacterSpawnPacket:" + packet.GetId());
         GameObject instance = Instantiate(characterPrefab, transform);
-        characters.Add(packet.GetId(), new CharacterData(
-            packet.GetId(), packet.GetClientId(), packet.GetPosition(), packet.GetColor(), instance
-        ));
         Character character = instance.GetComponent<Character>();
+        Color color;
         if (karmanClient.id.Equals(packet.GetClientId())) {
             character.enabled = true;
+            color = packet.GetColor();
         } else {
             Destroy(character.GetComponent<Rigidbody2D>());
             Destroy(character);
+            Color.RGBToHSV(packet.GetColor(), out float h, out _, out float v);
+            color = Color.HSVToRGB(h, 0.5f, v);
         }
+        characters.Add(packet.GetId(), new CharacterData(
+            packet.GetId(), packet.GetClientId(), packet.GetPosition(), color, instance
+        ));
     }
 
     private void OnCharacterDestroyPacketReceived(CharacterDestroyPacket packet) {
