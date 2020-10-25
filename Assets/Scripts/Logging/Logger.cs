@@ -2,68 +2,32 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Networking {
-    public enum LogLevel {
-        TRACE = 0,
-        INFO = 1,
-        WARNING = 2,
-        ERROR = 3,
-    }
-
-    public class LogMetaData {
-        private readonly string loggerName;
-        private readonly DateTime timestamp;
-        private readonly string stackTrace;
-
-        public LogMetaData(string loggerName) {
-            this.loggerName = loggerName;
-            timestamp = DateTime.UtcNow;
-            stackTrace = Environment.StackTrace;
-        }
-
-        public string GetClassName() {
-            return loggerName;
-        }
-
-        public DateTime GetTimestamp() {
-            return timestamp;
-        }
-
-        public string GetStackTrace() {
-            return stackTrace;
-        }
-    }
-
-    public interface IAppender {
-        LogLevel GetLogLevel();
-        void Append(LogLevel logLevel, LogMetaData logMetaData, string message, params object[] args);
-    }
-
+namespace Logging {
     public class Logger {
-        private static List<IAppender> appenders = new List<IAppender>();
+        private static readonly List<ILogAppender> logAppenders = new List<ILogAppender>();
 
-        private readonly string loggerName;
+        private readonly Type loggerType;
 
         public static void ClearAppenders() {
-            appenders.Clear();
+            logAppenders.Clear();
         }
 
-        public static void AddAppender(IAppender appender) {
-            appenders.Add(appender);
+        public static void AddAppender(ILogAppender appender) {
+            logAppenders.Add(appender);
         }
 
-        public Logger(string loggerName) {
-            this.loggerName = loggerName;
+        public Logger(Type loggerType) {
+            this.loggerType = loggerType;
         }
 
         public static Logger For<T>() {
-            return new Logger(typeof(T).FullName);
+            return new Logger(typeof(T));
         }
 
         public void Log(LogLevel logLevel, string message, params object[] args) {
-            foreach (var appender in appenders.Where(app => app.GetLogLevel() <= logLevel)) {
+            foreach (var appender in logAppenders.Where(app => app.GetLogLevel() <= logLevel)) {
                 try {
-                    appender.Append(logLevel, new LogMetaData(loggerName), message, args);
+                    appender.Append(logLevel, new LogMetaData(loggerType), message, args);
                 } catch { }
             }
         }

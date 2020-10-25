@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace Networking {
     public static class Bytes {
-        private static readonly Logger log = new Logger("Networking.Bytes");
+        private static readonly Logger log = new Logger(typeof(Bytes));
 
         public static byte[] Merge(params byte[][] arrays) {
             int byteLength = arrays.Length * 4 + arrays.Sum(array => array.Length);

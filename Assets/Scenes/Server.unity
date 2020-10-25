@@ -1089,7 +1089,7 @@ GameObject:
   - component: {fileID: 1028879599}
   - component: {fileID: 1028879600}
   m_Layer: 0
-  m_Name: LoggingInformation
+  m_Name: LoggingConfiguration
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

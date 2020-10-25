@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -117,7 +118,7 @@ namespace Networking {
         public override string ToString() {
             return typeof(PacketFactory).FullName
                 + ": ["
-                + string.Join(", ", identifiers.Select(kvp => string.Format("{0}({1}), ", kvp.Key, kvp.Value)))
+                + string.Join(", ", identifiers.Select(kvp => string.Format("{0}({1})", kvp.Key, kvp.Value)))
                 + "]";
         }
     }

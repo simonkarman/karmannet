@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Logging;
+using System;
 
 namespace Networking {
     public class ByteSender {

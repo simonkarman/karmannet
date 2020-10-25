@@ -1,9 +1,10 @@
-﻿using System;
+﻿using Logging;
+using System;
 using System.Net;
 
 namespace Networking {
     public static class ConnectionString {
-        private static readonly Logger log = new Logger("Networking.ConnectionString");
+        private static readonly Logger log = new Logger(typeof(ConnectionString));
 
         public static IPEndPoint Parse(string connectionString, int defaultPort) {
             try {
