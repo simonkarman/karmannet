@@ -1,5 +1,84 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6348494280217063658
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2910388706609131841}
+  - component: {fileID: 6638542754115294392}
+  - component: {fileID: 7720395808233790409}
+  m_Layer: 5
+  m_Name: ClientAverageLatency
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2910388706609131841
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6348494280217063658}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 7925394617058847398}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 1, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -72.32, y: -11.4543}
+  m_SizeDelta: {x: 64.01193, y: 22.908535}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &6638542754115294392
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6348494280217063658}
+  m_CullTransparentMesh: 0
+--- !u!114 &7720395808233790409
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6348494280217063658}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FontData:
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_FontSize: 10
+    m_FontStyle: 0
+    m_BestFit: 0
+    m_MinSize: 1
+    m_MaxSize: 40
+    m_Alignment: 8
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
+    m_LineSpacing: 1
+  m_Text: 0.00 sec
 --- !u!1 &7925394615666302388
 GameObject:
   m_ObjectHideFlags: 0
@@ -36,7 +115,7 @@ RectTransform:
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 20.599945, y: 0}
   m_SizeDelta: {x: 28.589554, y: -11.410446}
-  m_Pivot: {x: 0.49999973, y: 0.5}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7925394615666302391
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -107,10 +186,10 @@ RectTransform:
   m_Father: {fileID: 7925394617058847398}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.07255554, y: 8.5457}
-  m_SizeDelta: {x: -80.77966, y: -17.091465}
+  m_AnchoredPosition: {x: -31.932, y: -11.4543}
+  m_SizeDelta: {x: -144.78839, y: 22.908535}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7925394616205870758
 CanvasRenderer:
@@ -187,6 +266,7 @@ RectTransform:
   - {fileID: 7925394615666302389}
   - {fileID: 7925394617093811120}
   - {fileID: 7925394616205870756}
+  - {fileID: 2910388706609131841}
   - {fileID: 7925394617480668196}
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -248,6 +328,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   clientIdText: {fileID: 7925394617093811121}
   clientConnectedText: {fileID: 7925394616205870757}
+  clientAverageLatencyText: {fileID: 7720395808233790409}
 --- !u!1 &7925394617093811127
 GameObject:
   m_ObjectHideFlags: 0
@@ -358,7 +439,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 7925394617058847398}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 1}

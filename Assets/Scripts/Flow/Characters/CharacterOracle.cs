@@ -63,7 +63,6 @@ public class CharacterOracle : MonoBehaviour {
     protected void FixedUpdate() {
         foreach (var character in characters.Values) {
             if (character.RequestPositionSyncCheck()) {
-                Debug.Log("Updating out of sync position of character:" + character.GetId());
                 CharacterUpdatePositionPacket characterUpdatePositionPacket = character.GetUpdatePositionPacket();
                 karmanServer.Broadcast(characterUpdatePositionPacket);
             }

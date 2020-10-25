@@ -7,6 +7,8 @@ public class ServerUIClient : MonoBehaviour {
     private Text clientIdText = default;
     [SerializeField]
     private Text clientConnectedText = default;
+    [SerializeField]
+    private Text clientAverageLatencyText = default;
 
     private ServerFlow serverFlow;
     private Guid clientId;
@@ -18,7 +20,15 @@ public class ServerUIClient : MonoBehaviour {
         clientConnectedText.text = isConnected ? "Client (connected)" : "Client (not connected)";
     }
 
+    public Guid GetClientId() {
+        return clientId;
+    }
+
     public void Kick() {
         serverFlow.GetKarmanServer().Kick(clientId);
+    }
+
+    public void SetAverageLatency(float averageLatency) {
+        clientAverageLatencyText.text = string.Format("{0} sec", averageLatency.ToString("0.00"));
     }
 }

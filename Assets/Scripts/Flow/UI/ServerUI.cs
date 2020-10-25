@@ -1,6 +1,7 @@
 ﻿using KarmanProtocol;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -70,6 +71,9 @@ public class ServerUI : MonoBehaviour {
         karmanServer.OnClientConnectedCallback += (Guid clientId) => { clients[clientId].SetConnected(true); OnClientsChanged(); };
         karmanServer.OnClientDisconnectedCallback += (Guid clientId) => { clients[clientId].SetConnected(false); OnClientsChanged(); };
         karmanServer.OnClientLeftCallback += (Guid clientId) => { clients.Remove(clientId); OnClientsChanged(); };
+        
+        LatencyOracle latencyOracle = serverFlow.GetComponentInChildren<LatencyOracle>();
+        latencyOracle.OnClientAverageLatencyUpdatedCallback += OnClientAverageLatencyUpdated;
     }
 
     private void OnClientsChanged() {
@@ -91,6 +95,14 @@ public class ServerUI : MonoBehaviour {
             playerUI.SetFrom(serverFlow, clients[i].GetClientId(), clients[i].IsConnected());
         }
         numberOfClientsConnectedText.text = string.Format("{0} client(s) connected", clients.Count);
+    }
+
+    private void OnClientAverageLatencyUpdated(Guid clientId, float averageLatency) {
+        connectedClientUIParent
+            .GetComponentsInChildren<ServerUIClient>(true)
+            .Where(playerUI => playerUI.GetClientId().Equals(clientId))
+            .First()
+            .SetAverageLatency(averageLatency);
     }
 
     public void ScheduleShutdown() {

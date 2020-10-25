@@ -100,6 +100,7 @@ namespace KarmanProtocol {
                 Leave();
 
             } else {
+                log.Trace("Received a {0} packet from server", packet.GetType().Name);
                 OnPacketReceivedCallback(packet);
             }
         }

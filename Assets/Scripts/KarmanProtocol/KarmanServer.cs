@@ -8,7 +8,7 @@ namespace KarmanProtocol {
     public class KarmanServer {
         private static readonly Logger log = Logger.For<KarmanServer>();
 
-        public const string PROTOCOL_VERSION = "0.0.4";
+        public const string PROTOCOL_VERSION = "0.0.5";
 
         private class Client {
             private readonly Guid clientId;
@@ -169,7 +169,7 @@ namespace KarmanProtocol {
                 server.Disconnect(connectionId);
                 throw log.ExitError(new Exception(string.Format("Cannot handle a {0} packet for connection {1} because the client {2} that is used for that connection does not exist", packet.GetType().Name, connectionId, clientId)));
             }
-            log.Info("Received a {0} packet for client {1}", packet.GetType().Name, clientId);
+            log.Trace("Received a {0} packet for client {1}", packet.GetType().Name, clientId);
 
             if (packet is LeavePacket) {
                 Kick(clientId);

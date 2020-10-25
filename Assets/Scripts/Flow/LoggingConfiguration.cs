@@ -6,11 +6,14 @@ public class LoggingConfiguration : MonoBehaviour {
     private static readonly Logger log = Logger.For<LoggingConfiguration>();
     private LogFileAppender logFileAppender;
 
+    [SerializeField]
+    private string logFileName = default;
+
     protected void Awake() {
         Logger.ClearAppenders();
         Logger.AddAppender(new UnityDebugAppender(LogLevel.INFO));
         if (Application.platform == RuntimePlatform.WindowsPlayer || Application.platform == RuntimePlatform.LinuxPlayer) {
-            logFileAppender = new LogFileAppender(string.Format("{0}-log.txt", System.DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")), LogLevel.INFO);
+            logFileAppender = new LogFileAppender(string.Format("log-{0}-{1}.txt", logFileName, System.DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")), LogLevel.INFO);
             Logger.AddAppender(logFileAppender);
         }
 

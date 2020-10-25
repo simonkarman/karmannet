@@ -54,7 +54,6 @@ public class CharacterReplicator : MonoBehaviour {
     }
 
     private void OnCharacterUpdatePositionPacketReceived(CharacterUpdatePositionPacket packet) {
-        Debug.Log("Received a CharacterUpdatePositionPacket:" + packet.GetId());
         characters[packet.GetId()].SetPosition(packet.GetPosition());
     }
 
@@ -68,7 +67,6 @@ public class CharacterReplicator : MonoBehaviour {
     protected void FixedUpdate() {
         foreach (var character in characters.Values) {
             if (character.RequestPositionSyncCheck()) {
-                Debug.Log("Updating out of sync position of character:" + character.GetId());
                 CharacterUpdatePositionPacket characterUpdatePositionPacket = character.GetUpdatePositionPacket();
                 karmanClient.Send(characterUpdatePositionPacket);
             }
