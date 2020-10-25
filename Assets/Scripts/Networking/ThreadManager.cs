@@ -4,12 +4,15 @@ using UnityEngine;
 
 namespace Networking {
     public class ThreadManager : MonoBehaviour {
+        private static readonly Logger log = Logger.For<ThreadManager>();
+
         private static ThreadManager instance;
         private readonly List<Action> requestedActions = new List<Action>();
         private readonly List<Action> currentActions = new List<Action>();
 
         public static void Activate() {
             if (!instance) {
+                log.Trace("Thread Manager activated");
                 instance = new GameObject("Thread Manager").AddComponent<ThreadManager>();
             }
         }
@@ -28,9 +31,8 @@ namespace Networking {
             for (int i = 0; i < currentActions.Count; i++) {
                 try {
                     currentActions[i]();
-                } catch (Exception excepction) {
-                    Debug.LogWarning("An error occurred, while executing an action in the thread manager.");
-                    Debug.LogError(excepction, this);
+                } catch (Exception ex) {
+                    log.Error("An error occurred, while executing an action in the thread manager: {0}", ex);
                 }
             }
             currentActions.Clear();

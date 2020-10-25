@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using UnityEngine;
 using System.Linq;
 
 namespace Networking {
     public class Server {
+        private static readonly Logger log = Logger.For<Server>();
+
         public class Connection : IConnection {
             public const int MAX_FRAME_SIZE = 256;
 
@@ -49,15 +50,15 @@ namespace Networking {
 
             public void Disconnect() {
                 if (Status == ConnectionStatus.DISCONNECTED) {
-                    Debug.LogError(string.Format("Server cannot disconnect connection with connection {0} when it has already been disconnected", connectionId));
+                    log.Error("Server cannot disconnect connection with connection {0} when it has already been disconnected", connectionId);
                     return;
                 }
-                Debug.Log(string.Format("Disconnecting connection {0}", connectionId));
+                log.Info("Disconnecting connection {0}", connectionId);
                 Status = ConnectionStatus.DISCONNECTED;
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
                 server.OnDisconnected(connectionId);
-                Debug.Log(string.Format("Successfully disconnected connection {0}", connectionId));
+                log.Info("Successfully disconnected connection {0}", connectionId);
             }
 
             public void Send(byte[] data) {
@@ -81,15 +82,14 @@ namespace Networking {
 
         public Server() {
             packetFactory = PacketFactory.BuildFromAllAssemblies();
-            Debug.Log(packetFactory.ToString());
             ThreadManager.Activate();
         }
 
         public void Start(int port) {
             if (Status != ServerStatus.NEW) {
-                throw new InvalidOperationException("Cannot start a server that is already running or has already been shutdown");
+                throw log.ExitError(new Exception("Cannot start a server that is already running or has already been shutdown"));
             }
-            Debug.Log(string.Format("Starting server on port {0}", port));
+            log.Info(string.Format("Starting server on port {0}", port));
             IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
 
             rootSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -97,7 +97,7 @@ namespace Networking {
             rootSocket.Listen(100);
 
             var thread = new Thread(() => {
-                Debug.Log(string.Format("Server is ready for connections on {0}", localEndPoint));
+                log.Info(string.Format("Server is ready for connections on {0}", localEndPoint));
                 Status = ServerStatus.RUNNING;
                 OnRunning();
                 InitiateAcceptLoop();
@@ -140,7 +140,7 @@ namespace Networking {
             while (true) {
                 acceptDone.Reset();
                 if (Status == ServerStatus.SHUTDOWN) {
-                    Debug.Log("Breaking out of accepting new connections loop since server has shutdown");
+                    log.Info("Breaking out of accepting new connections loop since server has shutdown");
                     break;
                 }
 
@@ -153,13 +153,13 @@ namespace Networking {
         public void AcceptCallback(IAsyncResult ar) {
             try {
                 if (Status != ServerStatus.RUNNING) {
-                    Debug.Log("Server cannot handle an accept callback when it is not running");
+                    log.Info("Server cannot handle an accept callback when it is not running");
                     return;
                 }
 
                 Socket socket = rootSocket.EndAccept(ar);
                 Guid connectionId = Guid.NewGuid();
-                Debug.Log(string.Format("Accepted incoming connection from {0} and assigned id {1} to the connection", socket.RemoteEndPoint, connectionId));
+                log.Info("Accepted incoming connection from {0} and assigned id {1} to the connection", socket.RemoteEndPoint, connectionId);
                 Connection connection = new Connection(this, connectionId, socket);
                 connections.Add(connectionId, connection);
                 OnConnected(connectionId);
@@ -173,10 +173,10 @@ namespace Networking {
 
         public void Shutdown() {
             if (Status != ServerStatus.RUNNING) {
-                Debug.LogError("Server cannot shutdown when it is not running");
+                log.Error("Server cannot shutdown when it is not running");
                 return;
             }
-            Debug.Log("Shutting down server");
+            log.Info("Shutting down server");
             Status = ServerStatus.SHUTDOWN;
             var connectionIds = connections.Keys.ToList();
             foreach (var connectionId in connectionIds) {
@@ -184,7 +184,7 @@ namespace Networking {
                 connection.Disconnect();
             }
             rootSocket.Close();
-            Debug.Log("Server shutdown completed");
+            log.Info("Server shutdown completed");
             OnShutdown();
         }
 
@@ -192,7 +192,7 @@ namespace Networking {
             if (connections.TryGetValue(connectionId, out Connection connection)) {
                 connection.Disconnect();
             } else {
-                throw new InvalidOperationException(string.Format("Cannot disconnect connection {0} because that connection does not exist", connectionId));
+                throw log.ExitError(new ConnectionNotFoundException(connectionId));
             }
         }
 
@@ -208,7 +208,7 @@ namespace Networking {
             if (connections.TryGetValue(connectionId, out Connection connection)) {
                 connection.Send(bytes);
             } else {
-                throw new InvalidOperationException(string.Format("Cannot send a message to connection {0} because that connection does not exist", connectionId));
+                throw log.ExitError(new ConnectionNotFoundException(connectionId));
             }
         }
     }

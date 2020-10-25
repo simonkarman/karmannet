@@ -3,6 +3,8 @@ using System.Net;
 
 namespace Networking {
     public static class ConnectionString {
+        private static readonly Logger log = new Logger("Networking.ConnectionString");
+
         public static IPEndPoint Parse(string connectionString, int defaultPort) {
             try {
                 string[] parts = connectionString.Split(':');
@@ -15,7 +17,7 @@ namespace Networking {
                 int port = parts.Length == 1 ? defaultPort : int.Parse(parts[1]);
                 return new IPEndPoint(ipAddress, port);
             } catch (Exception) {
-                throw new InvalidOperationException("Invalid connection string provided");
+                throw log.ExitError(new InvalidConnectionStringException(connectionString));
             }
         }
     }

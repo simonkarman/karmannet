@@ -2,10 +2,10 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using UnityEngine;
 
 namespace Networking {
     public class Client : IConnection {
+        private static readonly Logger log = Logger.For<Client>();
         public static readonly int MAX_FRAME_SIZE = 256;
 
         private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
@@ -24,7 +24,6 @@ namespace Networking {
 
         public Client() {
             packetFactory = PacketFactory.BuildFromAllAssemblies();
-            Debug.Log(packetFactory.ToString());
             ThreadManager.Activate();
             byteFramer = new ByteFramer(MAX_FRAME_SIZE, OnFrameReceived);
             byteSender = new ByteSender(this);
@@ -32,23 +31,22 @@ namespace Networking {
 
         public void Start(IPEndPoint serverEndpoint) {
             if (Status != ConnectionStatus.NEW) {
-                throw new InvalidOperationException("Cannot start a client that is already connected or has already left");
+                throw log.ExitError(new ConnectionNotNewException("start"));
             }
-            Debug.Log(string.Format("Start of setting up connection to {0}", serverEndpoint));
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             var connectingThread = new Thread(() => {
-                Debug.Log(string.Format("Connecting to server at {0}", serverEndpoint));
+                log.Info("Starting client by setting up a connection to {0}", serverEndpoint);
                 socket.BeginConnect(serverEndpoint, new AsyncCallback(ConnectCallback), null);
 
                 connectDone.WaitOne();
 
                 if (socket.Connected) {
-                    Debug.Log("Succesfully connected to the server");
+                    log.Info("Succesfully connected to the server");
                     Status = ConnectionStatus.CONNECTED;
                     new ByteReceiver(this, OnBytesReceived);
                     OnConnected();
                 } else {
-                    Debug.LogWarning("Failed to connect to the server");
+                    log.Warning("Failed to connect to the server");
                     Status = ConnectionStatus.DISCONNECTED;
                     OnDisonnected();
                 }
@@ -94,12 +92,12 @@ namespace Networking {
         private void ConnectCallback(IAsyncResult ar) {
             try {
                 if (Status != ConnectionStatus.NEW) {
-                    Debug.LogError("Client cannot handle a connect callback when it is not new");
+                    log.Error("Client cannot handle a connect callback when it is not new");
                     return;
                 }
                 socket.EndConnect(ar);
             } catch (Exception e) {
-                Debug.LogError(e.ToString());
+                log.Error("Client cannot handle a connect callback due to the following exception: {0}", e.ToString());
             } finally {
                 connectDone.Set();
             }
@@ -113,19 +111,19 @@ namespace Networking {
 
         public void Disconnect() {
             if (Status != ConnectionStatus.CONNECTED) {
-                Debug.LogError("Client cannot disconnect when it is not connected");
+                log.Warning("Client cannot disconnect when it is not connected");
                 return;
             }
             if (!socket.Connected) {
                 Status = ConnectionStatus.DISCONNECTED;
                 return;
             }
-            Debug.Log("Disconnecting from server");
+            log.Info("Disconnecting from server");
             Status = ConnectionStatus.DISCONNECTED;
             socket.Shutdown(SocketShutdown.Both);
             socket.Close();
+            log.Info("Successfully disconnected from the server");
             OnDisonnected();
-            Debug.Log("Successfully disconnected from the server");
         }
     }
 }

@@ -2,10 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace KarmanProtocol {
     public class KarmanServer {
+        private static readonly Logger log = Logger.For<KarmanServer>();
+
         public const string PROTOCOL_VERSION = "0.0.4";
 
         private class Client {
@@ -85,7 +86,7 @@ namespace KarmanProtocol {
         }
 
         private void OnConnected(Guid connectionId) {
-            Debug.Log(string.Format("KarmanServer: Connection {0} connected", connectionId));
+            log.Info("Connection {0} connected", connectionId);
 
             connections.Add(connectionId, Guid.Empty);
             ServerInformationPacket serverInformationPacket = new ServerInformationPacket(id, PROTOCOL_VERSION);
@@ -93,27 +94,27 @@ namespace KarmanProtocol {
         }
 
         private void OnDisconnected(Guid connectionId) {
-            Debug.Log(string.Format("KarmanServer: Connection {0} disconnected", connectionId));
+            log.Info("Connection {0} disconnected", connectionId);
             if (!connections.TryGetValue(connectionId, out Guid clientId)) {
-                throw new InvalidOperationException(string.Format("Cannot disconnect connection {0} because that connection does not exist", connectionId));
+                throw log.ExitError(new ConnectionNotFoundException(connectionId));
             }
             connections.Remove(connectionId);
 
             if (clientId == Guid.Empty) {
-                Debug.Log(string.Format("KarmanServer: Connection {0} has successfully disconnected (because it was no longer / not yet connected to a client)", connectionId));
+                log.Info("Connection {0} has successfully disconnected (because it was no longer / not yet connected to a client)", connectionId);
                 return;
             }
 
             if (!clients.TryGetValue(clientId, out Client client)) {
-                throw new InvalidOperationException(string.Format("Cannot disconnect connection {0} from client {1} because that client does not exist", connectionId, clientId));
+                throw log.ExitError(new Exception(string.Format("Cannot disconnect connection {0} from client {1} because that client does not exist", connectionId, clientId)));
             }
 
             if (client.GetConnectionId() == connectionId) {
-                Debug.LogWarning(string.Format("KarmanServer: Connection {0} dropped while it was still connected to client {1} (client is still available for reconnection attempts)", connectionId, clientId));
+                log.Warning("Connection {0} dropped while it was still connected to client {1} (client is still available for reconnection attempts)", connectionId, clientId);
                 client.RemoveConnectionId();
 
             } else {
-                Debug.LogWarning(string.Format("KarmanServer: Connection {0} that disconnected was used for client {1}, but that client is already using a new connection {2}", connectionId, clientId, client.GetConnectionId()));
+                log.Warning("Connection {0} that disconnected was used for client {1}, but that client is already using a new connection {2}", connectionId, clientId, client.GetConnectionId());
             }
             OnClientDisconnectedCallback(clientId);
         }
@@ -121,59 +122,59 @@ namespace KarmanProtocol {
         private void OnPacketReceived(Guid connectionId, Packet packet) {
             if (!connections.TryGetValue(connectionId, out Guid clientId)) {
                 server.Disconnect(connectionId);
-                throw new InvalidOperationException(string.Format("Cannot handle packet for connection {0} because that connection does not exist", connectionId));
+                throw log.ExitError(new Exception(string.Format("Cannot handle packet for connection {0} because that connection does not exist", connectionId)));
             }
 
             if (packet is MessagePacket messagePacket) {
-                Debug.Log(string.Format("KarmanServer: Connection {0} (client={1}) says: {2}", connectionId, clientId == Guid.Empty ? "<none>" : clientId.ToString(), messagePacket.GetMessage()));
+                log.Info("Connection {0} (client={1}) says: {2}", connectionId, clientId == Guid.Empty ? "<none>" : clientId.ToString(), messagePacket.GetMessage());
                 return;
             }
 
             if (packet is ClientInformationPacket clientInformationPacket) {
                 if (clientId != Guid.Empty) {
-                    throw new InvalidOperationException(string.Format("Connection {0} cannot create a new client {1} because the connection already points to client {2}", connectionId, clientInformationPacket.GetClientId(), clientId));
+                    throw log.ExitError(new Exception(string.Format("Connection {0} cannot create a new client {1} because the connection already points to client {2}", connectionId, clientInformationPacket.GetClientId(), clientId)));
                 }
                 clientId = clientInformationPacket.GetClientId();
                 Guid previousConnectionId = Guid.Empty;
                 bool newPlayer = false;
                 if (clients.TryGetValue(clientId, out Client connectedClient)) {
-                    Debug.Log(string.Format("KarmanServer: Connection {0} is taking over an already existing client {1}", connectionId, clientId));
+                    log.Info("Connection {0} is taking over an already existing client {1}", connectionId, clientId);
                     previousConnectionId = connectedClient.GetConnectionId();
                 } else {
-                    Debug.Log(string.Format("KarmanServer: Connection {0} is creating a new client {1}", connectionId, clientId));
-                    connectedClient = new Client(clientId, clientInformationPacket.GetClientSecret());
+                    Guid clientSecret = clientInformationPacket.GetClientSecret();
+                    log.Info("Connection {0} is creating a new client {1} (secret {2}-**...)", connectionId, clientId, clientSecret.ToString().Substring(0, 13));
+                    connectedClient = new Client(clientId, clientSecret);
                     clients.Add(clientId, connectedClient);
                     newPlayer = true;
                 }
                 if (connectedClient.TrySetConnectionId(connectionId, clientInformationPacket.GetClientSecret())) {
                     if (previousConnectionId != Guid.Empty) {
-                        Debug.Log(string.Format("KarmanServer: Disconnecting previous connection {0}, since connection {1} is taking over a client {2}", previousConnectionId, connectionId, clientId));
+                        log.Info("Disconnecting previous connection {0}, since connection {1} is taking over a client {2}", previousConnectionId, connectionId, clientId);
                         server.Disconnect(previousConnectionId);
                     }
                     connections[connectionId] = clientId;
-                    Debug.Log(string.Format("Client {0} now uses connection {1}", clientId, connectionId));
+                    log.Info("Client {0} now uses connection {1}", clientId, connectionId);
                     if (newPlayer) {
                         OnClientJoinedCallback(clientId);
                     }
                     OnClientConnectedCallback(clientId);
                 } else {
-                    Debug.LogWarning(string.Format("Aborted connection {0} taking over client {1} since an invalid secret was provided", connectionId, clientId));
+                    log.Warning("Aborted connection {0} taking over client {1} since an invalid secret was provided", connectionId, clientId);
                 }
                 return;
             }
 
             if (!clients.TryGetValue(clientId, out Client client)) {
                 server.Disconnect(connectionId);
-                throw new InvalidOperationException(string.Format("Cannot handle a {0} packet for connection {1} because the client {2} that is used for that connection does not exist", packet.GetType().Name, connectionId, clientId));
+                throw log.ExitError(new Exception(string.Format("Cannot handle a {0} packet for connection {1} because the client {2} that is used for that connection does not exist", packet.GetType().Name, connectionId, clientId)));
             }
-            Debug.Log(string.Format("KarmanServer: Received a {0} packet for client {1}", packet.GetType().Name, clientId));
+            log.Info("Received a {0} packet for client {1}", packet.GetType().Name, clientId);
 
             if (packet is LeavePacket) {
                 Kick(clientId);
 
             } else {
                 OnClientPackedReceivedCallback(clientId, packet);
-                //Debug.LogWarning(string.Format("KarmanServer: Did not handle a received packet that is of type {0} for client {1}", packet.GetType().Name, client.GetClientId()));
             }
         }
 
@@ -185,11 +186,11 @@ namespace KarmanProtocol {
         }
 
         public void Kick(Guid clientId) {
+            log.Info("Kicking client {0}, all information about the client will be removed", clientId);
             if (!clients.TryGetValue(clientId, out Client client)) {
-                Debug.LogWarning(string.Format("Cannot kick client {0}, because that client does not exist", clientId));
+                log.Warning("Cannot kick client {0}, because that client does not exist", clientId);
                 return;
             }
-            Debug.Log(string.Format("Removed all data of client {0}, so a reconnected cannot be made", clientId));
             clients.Remove(clientId);
 
             Guid connectionId = client.GetConnectionId();
@@ -199,8 +200,8 @@ namespace KarmanProtocol {
                     server.Send(connectionId, new LeavePacket());
                     System.Threading.Thread.Sleep(100); // TODO: fix this.
                     server.Disconnect(connectionId);
-                } catch (Exception) {
-                    Debug.LogWarning(string.Format("Connection {0} of client {1} could not be disconnected", connectionId, clientId));
+                } catch (Exception ex) {
+                    log.Warning("Connection {0} of client {1} could not be disconnected, due to the following reason: {2}", connectionId, clientId, ex);
                 }
             }
             OnClientLeftCallback(clientId);
@@ -217,7 +218,7 @@ namespace KarmanProtocol {
 
         public void Send(Guid clientId, Packet packet) {
             if (!clients.TryGetValue(clientId, out Client client)) {
-                throw new InvalidOperationException(string.Format("Cannot send a message to client {0}, because that client does not exist", clientId));
+                throw log.ExitError(new Exception(string.Format("Cannot send a message to client {0}, because that client does not exist", clientId)));
             }
             server.Send(client.GetConnectionId(), packet);
         }

@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnityEngine;
 
 namespace Networking {
     public static class Bytes {
+        private static readonly Logger log = new Logger("Networking.Bytes");
+
         public static byte[] Merge(params byte[][] arrays) {
             int byteLength = arrays.Length * 4 + arrays.Sum(array => array.Length);
             byte[] mergedBytes = new byte[byteLength];
@@ -17,7 +18,7 @@ namespace Networking {
                 Array.Copy(array, 0, mergedBytes, currentIndex + 4, array.Length);
                 currentIndex += 4 + array.Length;
             }
-            //Debug.Log(string.Format("Merged {0} byte array(s) into on array with a total length of {1} bytes", arrays.Length, mergedBytes.Length));
+            log.Trace("Merged {0} byte array(s) into on array with a total length of {1} bytes", arrays.Length, mergedBytes.Length);
             return mergedBytes;
         }
 
@@ -31,7 +32,7 @@ namespace Networking {
                 arrays.Add(array);
                 currentIndex += 4 + arrayLength;
             }
-            Debug.Log(string.Format("Splitted {0} total bytes into {1} byte array(s)", mergedBytes.Length, arrays.Count));
+            log.Trace("Splitted {0} total bytes into {1} byte array(s)", mergedBytes.Length, arrays.Count);
             return arrays.ToArray();
         }
 
@@ -43,7 +44,7 @@ namespace Networking {
                 Array.Copy(arrays[i], 0, mergedBytes, currentIndex, arrays[i].Length);
                 currentIndex += arrays[i].Length;
             }
-            //Debug.Log(string.Format("Packed {0} byte array(s) into on array with a total length of {1} bytes", arrays.Length, mergedBytes.Length));
+            log.Trace("Packed {0} byte array(s) into on array with a total length of {1} bytes", arrays.Length, mergedBytes.Length);
             return mergedBytes;
         }
 
@@ -69,14 +70,14 @@ namespace Networking {
             return guid.ToByteArray();
         }
 
-        public static byte[] Of(Vector2 vector2) {
+        public static byte[] Of(UnityEngine.Vector2 vector2) {
             byte[] bytes = new byte[8];
             Array.Copy(BitConverter.GetBytes(vector2.x), 0, bytes, 0, 4);
             Array.Copy(BitConverter.GetBytes(vector2.y), 0, bytes, 4, 4);
             return bytes;
         }
 
-        public static byte[] Of(Vector3 vector3) {
+        public static byte[] Of(UnityEngine.Vector3 vector3) {
             byte[] bytes = new byte[12];
             Array.Copy(BitConverter.GetBytes(vector3.x), 0, bytes, 0, 4);
             Array.Copy(BitConverter.GetBytes(vector3.y), 0, bytes, 4, 4);
@@ -84,7 +85,7 @@ namespace Networking {
             return bytes;
         }
 
-        public static byte[] Of(Quaternion quaternion) {
+        public static byte[] Of(UnityEngine.Quaternion quaternion) {
             byte[] bytes = new byte[16];
             Array.Copy(BitConverter.GetBytes(quaternion.x), 0, bytes, 0, 4);
             Array.Copy(BitConverter.GetBytes(quaternion.y), 0, bytes, 4, 4);
@@ -93,7 +94,7 @@ namespace Networking {
             return bytes;
         }
 
-        public static byte[] Of(Color color) {
+        public static byte[] Of(UnityEngine.Color color) {
             byte[] bytes = new byte[16];
             Array.Copy(BitConverter.GetBytes(color.r), 0, bytes, 0, 4);
             Array.Copy(BitConverter.GetBytes(color.g), 0, bytes, 4, 4);
@@ -102,10 +103,10 @@ namespace Networking {
             return bytes;
         }
 
-        public static Vector2 GetVector2(byte[] bytes, int startIndex = 0) {
+        public static UnityEngine.Vector2 GetVector2(byte[] bytes, int startIndex = 0) {
             float x = BitConverter.ToSingle(bytes, startIndex);
             float y = BitConverter.ToSingle(bytes, startIndex + 4);
-            return new Vector2(x, y);
+            return new UnityEngine.Vector2(x, y);
         }
 
         public static string GetString(byte[] bytes, int startIndex = 0, int count = -1) {
@@ -129,27 +130,27 @@ namespace Networking {
             return BitConverter.ToSingle(bytes, startIndex);
         }
 
-        public static Vector3 GetVector3(byte[] bytes, int startIndex = 0) {
+        public static UnityEngine.Vector3 GetVector3(byte[] bytes, int startIndex = 0) {
             float x = BitConverter.ToSingle(bytes, startIndex);
             float y = BitConverter.ToSingle(bytes, startIndex + 4);
             float z = BitConverter.ToSingle(bytes, startIndex + 8);
-            return new Vector3(x, y, z);
+            return new UnityEngine.Vector3(x, y, z);
         }
 
-        public static Quaternion GetQuaternion(byte[] bytes, int startIndex = 0) {
+        public static UnityEngine.Quaternion GetQuaternion(byte[] bytes, int startIndex = 0) {
             float x = BitConverter.ToSingle(bytes, startIndex + 0);
             float y = BitConverter.ToSingle(bytes, startIndex + 4);
             float z = BitConverter.ToSingle(bytes, startIndex + 8);
             float w = BitConverter.ToSingle(bytes, startIndex + 12);
-            return new Quaternion(x, y, z, w);
+            return new UnityEngine.Quaternion(x, y, z, w);
         }
 
-        public static Color GetColor(byte[] bytes, int startIndex = 0) {
+        public static UnityEngine.Color GetColor(byte[] bytes, int startIndex = 0) {
             float r = BitConverter.ToSingle(bytes, startIndex + 0);
             float g = BitConverter.ToSingle(bytes, startIndex + 4);
             float b = BitConverter.ToSingle(bytes, startIndex + 8);
             float a = BitConverter.ToSingle(bytes, startIndex + 12);
-            return new Color(r, g, b, a);
+            return new UnityEngine.Color(r, g, b, a);
         }
     }
 }

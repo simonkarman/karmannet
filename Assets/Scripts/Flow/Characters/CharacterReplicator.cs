@@ -39,8 +39,8 @@ public class CharacterReplicator : MonoBehaviour {
         } else {
             Destroy(character.GetComponent<Rigidbody2D>());
             Destroy(character);
-            Color.RGBToHSV(packet.GetColor(), out float h, out _, out float v);
-            color = Color.HSVToRGB(h, 0.5f, v);
+            color = packet.GetColor();
+            color.a = 0.3f;
         }
         characters.Add(packet.GetId(), new CharacterData(
             packet.GetId(), packet.GetClientId(), packet.GetPosition(), color, instance

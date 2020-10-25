@@ -1,10 +1,10 @@
 ﻿using Networking;
 using System;
 using System.Net;
-using UnityEngine;
 
 namespace KarmanProtocol {
     public class KarmanClient {
+        private static readonly Logger log = Logger.For<KarmanClient>();
 
         private Client client;
 
@@ -35,10 +35,10 @@ namespace KarmanProtocol {
         }
 
         public void Start(string connectionString, int defaultPort) {
-            Debug.Log(string.Format(
+            log.Info(
                 "KarmanClient: Starting KarmanClient with connectionString={0} (defaultPort={1}), clientId={2}",
                 connectionString, defaultPort, id
-            ));
+            );
             endpoint = ConnectionString.Parse(connectionString, defaultPort);
             client.Start(endpoint);
         }
@@ -55,16 +55,16 @@ namespace KarmanProtocol {
         private void OnDisconnected() {
             OnDisconnectedCallback();
             if (reconnectionAttempt) {
-                Debug.LogError("Client was unable to reconnect to the server, server will now be left");
+                log.Error("Client was unable to reconnect to the server, server will now be left");
                 Leave();
                 return;
             }
             if (!hasJoined) {
-                Debug.LogError("Client was unable to connect to the server");
+                log.Error("Client was unable to connect to the server");
                 return;
             }
             if (!left) {
-                Debug.LogWarning("Connection with server lost, immediately trying to reconnect");
+                log.Warning("Connection with server lost, immediately trying to reconnect");
                 reconnectionAttempt = true;
                 SetupClient();
                 client.Start(endpoint);
@@ -77,18 +77,18 @@ namespace KarmanProtocol {
 
         private void OnPacketReceived(Packet packet) {
             if (packet is MessagePacket messagePacket) {
-                Debug.Log(string.Format("Server says: {0}", messagePacket.GetMessage()));
+                log.Info("Server says: {0}", messagePacket.GetMessage());
 
             } else if (packet is ServerInformationPacket serverInformationPacket) {
-                Debug.Log(string.Format(
+                log.Info(
                     "Server send its information serverId={0} and protocolVersion={1}",
                     serverInformationPacket.GetServerId(), serverInformationPacket.GetProtocolVersion()
-                ));
+                );
                 if (KarmanServer.PROTOCOL_VERSION != serverInformationPacket.GetProtocolVersion()) {
-                    Debug.LogError(string.Format(
+                    log.Warning(
                         "Leaving server since it uses a different protocol version ({0}) than the client ({1}) is using",
                         KarmanServer.PROTOCOL_VERSION, serverInformationPacket.GetProtocolVersion()
-                    ));
+                    );
                     Leave();
                 } else {
                     ClientInformationPacket provideUsernamePacket = new ClientInformationPacket(id, secret);
@@ -99,14 +99,13 @@ namespace KarmanProtocol {
                 Leave();
 
             } else {
-                //Debug.LogWarning(string.Format("KarmanClient: Did not handle a received packet that is of type {0}", packet.GetType().Name));
                 OnPacketReceivedCallback(packet);
             }
         }
 
         public void Leave() {
             if (left) {
-                Debug.LogWarning("Client cannot leave the server if it already left");
+                log.Warning("Client cannot leave the server if it already left");
                 return;
             }
             left = true;
@@ -114,8 +113,8 @@ namespace KarmanProtocol {
                 client.Send(new LeavePacket());
                 System.Threading.Thread.Sleep(100); // TODO: fix this.
                 client.Disconnect();
-            } catch (Exception) {
-                Debug.LogWarning(string.Format("Connection with server could not be disconnected"));
+            } catch (Exception ex) {
+                log.Warning("Connection with server could not be disconnected, due to the following reason: {0}", ex);
             }
             OnLeftCallback();
         }

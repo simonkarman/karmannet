@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEngine;
 
 namespace Networking {
     public abstract class Packet {
@@ -53,26 +52,26 @@ namespace Networking {
             return value;
         }
 
-        protected Vector2 ReadVector2() {
-            Vector2 value = Bytes.GetVector2(bytes, marker);
+        protected UnityEngine.Vector2 ReadVector2() {
+            UnityEngine.Vector2 value = Bytes.GetVector2(bytes, marker);
             marker += 8;
             return value;
         }
 
-        protected Vector3 ReadVector3() {
-            Vector3 value = Bytes.GetVector3(bytes, marker);
+        protected UnityEngine.Vector3 ReadVector3() {
+            UnityEngine.Vector3 value = Bytes.GetVector3(bytes, marker);
             marker += 12;
             return value;
         }
 
-        protected Quaternion ReadQuaternion() {
-            Quaternion value = Bytes.GetQuaternion(bytes, marker);
+        protected UnityEngine.Quaternion ReadQuaternion() {
+            UnityEngine.Quaternion value = Bytes.GetQuaternion(bytes, marker);
             marker += 16;
             return value;
         }
 
-        protected Color ReadColor() {
-            Color value = Bytes.GetColor(bytes, marker);
+        protected UnityEngine.Color ReadColor() {
+            UnityEngine.Color value = Bytes.GetColor(bytes, marker);
             marker += 16;
             return value;
         }

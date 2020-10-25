@@ -27,6 +27,10 @@ public class MineOracle : MonoBehaviour {
         karmanServer = serverFlow.GetKarmanServer();
         karmanServer.OnClientJoinedCallback += OnClientJoined;
         nextSpawnMoment = initialSpawnDelay;
+
+        enabled = false;
+        karmanServer.OnRunningCallback += () => enabled = true;
+        karmanServer.OnShutdownCallback += () => enabled = false;
     }
 
     private void OnClientJoined(Guid clientId) {

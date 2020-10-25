@@ -2,7 +2,9 @@
 
 namespace Networking {
     public class ByteFramer {
-        private readonly int maxPacketSize;
+        private static readonly Logger log = Logger.For<ByteFramer>();
+
+        private readonly int maxFrameSize;
         private readonly Action<byte[]> onFrameCompleted;
 
         private readonly byte[] prefixBuffer;
@@ -10,8 +12,8 @@ namespace Networking {
         private int bytesInCurrentBuffer = 0;
 
         public byte[] Frame(byte[] bytes) {
-            if (bytes.Length > maxPacketSize) {
-                throw new InvalidOperationException(string.Format("Client cannot send a frame larger than {0} bytes to the server", maxPacketSize));
+            if (bytes.Length > maxFrameSize) {
+                throw log.ExitError(new InvalidFrameSizeException(bytes.Length, maxFrameSize));
             }
             byte[] lengthPrefix = BitConverter.GetBytes(bytes.Length);
             int framedPacketSize = lengthPrefix.Length + bytes.Length;
@@ -21,8 +23,8 @@ namespace Networking {
             return frame;
         }
 
-        public ByteFramer(int maxPacketSize, Action<byte[]> onFrameCompleted) {
-            this.maxPacketSize = maxPacketSize;
+        public ByteFramer(int maxFrameSize, Action<byte[]> onFrameCompleted) {
+            this.maxFrameSize = maxFrameSize;
             this.onFrameCompleted = onFrameCompleted;
             prefixBuffer = new byte[sizeof(int)];
         }
@@ -50,11 +52,12 @@ namespace Networking {
         private void OnBufferFilled() {
             if (dataBuffer == null) {
                 int frameSize = BitConverter.ToInt32(prefixBuffer, 0);
-                if (frameSize < 0 || frameSize > maxPacketSize) {
-                    throw new InvalidOperationException(string.Format("Frame size {0} is less than zero or is larger than maximum frame size {1}", frameSize, maxPacketSize));
+                if (frameSize < 0 || frameSize > maxFrameSize) {
+                    throw log.ExitError(new InvalidFrameSizeException(frameSize, maxFrameSize));
                 }
 
                 if (frameSize == 0) {
+                    log.Trace("ByteFramer completed an empty frame");
                     onFrameCompleted(new byte[0]);
                     bytesInCurrentBuffer = 0;
                 } else {
@@ -62,6 +65,7 @@ namespace Networking {
                     bytesInCurrentBuffer = 0;
                 }
             } else {
+                log.Trace("ByteFramer completed a frame of {0} byte(s)", dataBuffer.Length);
                 onFrameCompleted(dataBuffer);
                 dataBuffer = null;
                 bytesInCurrentBuffer = 0;

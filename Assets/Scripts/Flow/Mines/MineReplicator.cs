@@ -1,4 +1,5 @@
 ﻿using KarmanProtocol;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class MineReplicator : MonoBehaviour {
@@ -8,10 +9,12 @@ public class MineReplicator : MonoBehaviour {
     private GameObject minePrefab = default;
 
     private KarmanClient karmanClient;
+    private readonly List<MineData> mines = new List<MineData>();
 
     protected void Start() {
         karmanClient = clientFlow.GetKarmanClient();
         karmanClient.OnPacketReceivedCallback += OnPacketReceived;
+        karmanClient.OnLeftCallback += OnLeft;
     }
 
     private void OnPacketReceived(Networking.Packet packet) {
@@ -22,10 +25,12 @@ public class MineReplicator : MonoBehaviour {
 
     private void OnMineSpawnPacketReceived(MineSpawnPacket packet) {
         Debug.Log("Received a MineSpawnPacket:" + packet.GetId());
-        new MineData(packet.GetId(), packet.GetPosition(), packet.GetDuration(), minePrefab);
+        new MineData(packet.GetId(), packet.GetPosition(), packet.GetDuration(), Instantiate(minePrefab, transform));
     }
 
     private void OnLeft() {
-        // TODO: Destroy still existing mines
+        foreach (Mine mine in transform.GetComponentsInChildren<Mine>()) {
+            Destroy(mine.gameObject);
+        }
     }
 }

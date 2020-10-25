@@ -236,10 +236,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   serverFlow: {fileID: 1040089226}
   minePrefab: {fileID: 3721290908521269263, guid: 9ad400af90185a841bce69787de6a13f, type: 3}
-  initialSpawnDelay: 2
-  spawnRate: 2
-  minMineDuration: 2.5
-  maxMineDuration: 4
+  initialSpawnDelay: 5
+  spawnRate: 8
+  minMineDuration: 6
+  maxMineDuration: 10
   spawnBounds:
     m_Center: {x: 0, y: -1.5, z: 0}
     m_Extent: {x: 8, y: 2.6, z: 0}
@@ -1089,7 +1089,7 @@ GameObject:
   - component: {fileID: 1028879599}
   - component: {fileID: 1028879600}
   m_Layer: 0
-  m_Name: BuildIdLogger
+  m_Name: LoggingInformation
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1150,7 +1150,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbaba9c1dc322174bb840a1c32c53bb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  startDelay: 2
+  startDelay: 1
 --- !u!4 &1040089227
 Transform:
   m_ObjectHideFlags: 0

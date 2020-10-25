@@ -10,6 +10,7 @@ public class CharacterOracle : MonoBehaviour {
     private GameObject characterPrefab = default;
 
     private KarmanServer karmanServer;
+    private int totalNumberOfCharactersJoined = 0;
     private readonly Dictionary<Guid, CharacterData> characters = new Dictionary<Guid, CharacterData>();
 
     protected void Start() {
@@ -17,6 +18,10 @@ public class CharacterOracle : MonoBehaviour {
         karmanServer.OnClientJoinedCallback += OnClientJoined;
         karmanServer.OnClientLeftCallback += OnClientLeft;
         karmanServer.OnClientPackedReceivedCallback += OnClientPacketReceived;
+
+        enabled = false;
+        karmanServer.OnRunningCallback += () => enabled = true;
+        karmanServer.OnShutdownCallback += () => enabled = false;
     }
 
     private void OnClientJoined(Guid clientId) {
@@ -24,7 +29,7 @@ public class CharacterOracle : MonoBehaviour {
                 Guid.NewGuid(),
                 clientId,
                 UnityEngine.Random.insideUnitCircle * 4f,
-                Color.HSVToRGB((characters.Count % 7) / 7f, 1f, 1f),
+                Color.HSVToRGB((totalNumberOfCharactersJoined++ % 7) / 7f, 1f, 1f),
                 Instantiate(characterPrefab, transform)
             );
         Debug.Log(string.Format("Spawning a new character {0} because client {1} joined the server", character.GetId(), clientId));
