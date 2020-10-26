@@ -97,7 +97,7 @@ public class ServerUI : MonoBehaviour {
         numberOfClientsConnectedText.text = string.Format("{0} client(s) connected", clients.Count);
     }
 
-    private void OnClientAverageLatencyUpdated(Guid clientId, float averageLatency) {
+    private void OnClientAverageLatencyUpdated(Guid clientId, int averageLatency) {
         connectedClientUIParent
             .GetComponentsInChildren<ServerUIClient>(true)
             .Where(playerUI => playerUI.GetClientId().Equals(clientId))

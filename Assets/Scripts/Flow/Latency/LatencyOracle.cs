@@ -1,5 +1,4 @@
 ﻿using KarmanProtocol;
-using Logging;
 using Networking;
 using System;
 using System.Collections.Generic;
@@ -22,8 +21,8 @@ public class PingMoment {
         return new PingPacket(pingId);
     }
 
-    public bool ResolveOne(out float latency) {
-        latency = Time.realtimeSinceStartup - moment;
+    public bool ResolveOne(out int latency) {
+        latency = Mathf.CeilToInt((Time.realtimeSinceStartup - moment) * 1000);
         return --numberOfPingsInProgress <= 0;
     }
 
@@ -38,7 +37,7 @@ public class PingMoment {
 
 public class ClientLatencyData {
     private bool connected = false;
-    private readonly LinkedList<float> latencyHistory = new LinkedList<float>();
+    private readonly LinkedList<int> latencyHistory = new LinkedList<int>();
     private readonly int maxLatencyHistorySize;
 
     public ClientLatencyData(int maxLatencyHistorySize) {
@@ -53,12 +52,15 @@ public class ClientLatencyData {
         return connected;
     }
 
-    public float AddLatencyAndGetAverage(float latency) {
+    public void AddLatency(int latency) {
         latencyHistory.AddLast(latency);
         if (latencyHistory.Count > maxLatencyHistorySize) {
             latencyHistory.RemoveFirst();
         }
-        return latencyHistory.Average();
+    }
+
+    public int GetMaxLatency() {
+        return latencyHistory.Max();
     }
 }
 
@@ -77,7 +79,7 @@ public class LatencyOracle : MonoBehaviour {
     private readonly Dictionary<Guid, ClientLatencyData> latencyDataPerClient = new Dictionary<Guid, ClientLatencyData>();
     private float nextPingMoment;
 
-    public Action<Guid, float> OnClientAverageLatencyUpdatedCallback;
+    public Action<Guid, int> OnClientAverageLatencyUpdatedCallback;
 
     protected void Start() {
         karmanServer = serverFlow.GetKarmanServer();
@@ -123,12 +125,12 @@ public class LatencyOracle : MonoBehaviour {
     private void OnClientPacketReceived(Guid clientId, Packet packet) {
         if (packet is PingResponsePacket pingResponsePacket) {
             Guid pingId = pingResponsePacket.GetPingId();
-            if (pingMoments[pingId].ResolveOne(out float latency)) {
+            if (pingMoments[pingId].ResolveOne(out int latency)) {
                 pingMoments.Remove(pingId);
             }
-            float average = latencyDataPerClient[clientId].AddLatencyAndGetAverage(latency);
-            log.Trace("Client {0} has a current average latency with the server of {1} seconds.", clientId, average);
-            OnClientAverageLatencyUpdatedCallback(clientId, average);
+            latencyDataPerClient[clientId].AddLatency(latency);
+            log.Trace("Client {0} has a latency with the server of {1} milliseconds.", clientId, latency);
+            OnClientAverageLatencyUpdatedCallback(clientId, latency);
         }
     }
 }

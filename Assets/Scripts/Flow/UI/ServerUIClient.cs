@@ -28,7 +28,7 @@ public class ServerUIClient : MonoBehaviour {
         serverFlow.GetKarmanServer().Kick(clientId);
     }
 
-    public void SetAverageLatency(float averageLatency) {
-        clientAverageLatencyText.text = string.Format("{0} sec", averageLatency.ToString("0.00"));
+    public void SetAverageLatency(int averageLatency) {
+        clientAverageLatencyText.text = string.Format("{0}ms", averageLatency);
     }
 }

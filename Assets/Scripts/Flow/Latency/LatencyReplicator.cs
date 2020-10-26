@@ -5,7 +5,6 @@ using UnityEngine;
 public class LatencyReplicator : MonoBehaviour {
     [SerializeField]
     private ClientFlow clientFlow = default;
-    
 
     private KarmanClient karmanClient;
 
