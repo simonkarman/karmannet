@@ -16,6 +16,10 @@ namespace Networking {
 
         public abstract void Validate();
 
+        protected bool IsDone() {
+            return marker >= bytes.Length;
+        }
+
         protected void ResetMarker() {
             marker = 0;
         }

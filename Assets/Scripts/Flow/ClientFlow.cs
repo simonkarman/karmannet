@@ -1,4 +1,5 @@
 ﻿using KarmanProtocol;
+using System;
 using UnityEngine;
 
 public class ClientFlow : MonoBehaviour {
@@ -13,7 +14,7 @@ public class ClientFlow : MonoBehaviour {
     private KarmanClient karmanClient;
 
     protected void Awake() {
-        karmanClient = new KarmanClient();
+        karmanClient = new KarmanClient(Guid.NewGuid(), ServerFlow.GAME_ID, Guid.NewGuid());
     }
 
     public void Start() {

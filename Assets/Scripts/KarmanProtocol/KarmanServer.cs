@@ -8,7 +8,7 @@ namespace KarmanProtocol {
     public class KarmanServer {
         private static readonly Logger log = Logger.For<KarmanServer>();
 
-        public const string PROTOCOL_VERSION = "0.0.5";
+        public const string PROTOCOL_VERSION = "0.1.0";
 
         private class Client {
             private readonly Guid clientId;
@@ -46,6 +46,7 @@ namespace KarmanProtocol {
         }
 
         public readonly Guid id;
+        public readonly Guid gameId;
 
         private readonly Server server;
         private readonly Dictionary<Guid, Guid> connections = new Dictionary<Guid, Guid>();
@@ -59,8 +60,9 @@ namespace KarmanProtocol {
         public Action<Guid> OnClientLeftCallback;
         public Action<Guid, Packet> OnClientPackedReceivedCallback;
 
-        public KarmanServer() {
+        public KarmanServer(Guid gameId) {
             id = Guid.NewGuid();
+            this.gameId = gameId;
 
             server = new Server();
             server.OnRunningCallback += OnRunning;
@@ -90,7 +92,7 @@ namespace KarmanProtocol {
             log.Info("Connection {0} connected", connectionId);
 
             connections.Add(connectionId, Guid.Empty);
-            ServerInformationPacket serverInformationPacket = new ServerInformationPacket(id, PROTOCOL_VERSION);
+            ServerInformationPacket serverInformationPacket = new ServerInformationPacket(id, gameId, PROTOCOL_VERSION);
             server.Send(connectionId, serverInformationPacket);
         }
 

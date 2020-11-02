@@ -93,9 +93,15 @@ namespace Networking {
             log.Info(string.Format("Starting server on port {0}", port));
             IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, port);
 
-            rootSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            rootSocket.Bind(localEndPoint);
-            rootSocket.Listen(100);
+            try {
+                rootSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                rootSocket.Bind(localEndPoint);
+                rootSocket.Listen(100);
+            } catch (Exception err) {
+                log.Error("Server could no start due to: {0}", err);
+                OnShutdownCallback();
+                return;
+            }
 
             var thread = new Thread(() => {
                 log.Info(string.Format("Server is ready for connections on {0}", localEndPoint));

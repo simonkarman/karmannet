@@ -1,10 +1,12 @@
 ﻿using KarmanProtocol;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class ServerFlow : MonoBehaviour {
     public const int DEFAULT_SERVER_PORT = 14641;
+    public static readonly Guid GAME_ID = Guid.Parse("60b2225e-bdb8-4235-a3bf-85c563eb9c86");
 
     [SerializeField]
     private int startDelay = 2;
@@ -12,7 +14,7 @@ public class ServerFlow : MonoBehaviour {
     private KarmanServer server;
 
     protected void Awake() {
-        server = new KarmanServer();
+        server = new KarmanServer(GAME_ID);
     }
 
     protected IEnumerator Start() {
