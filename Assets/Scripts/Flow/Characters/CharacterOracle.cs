@@ -52,7 +52,7 @@ public class CharacterOracle : MonoBehaviour {
         if (packet is CharacterUpdatePositionPacket characterUpdatePositionPacket) {
             CharacterData character = characters[clientId];
             if (character.GetId().Equals(characterUpdatePositionPacket.GetId())) {
-                characters[clientId].SetPosition(characterUpdatePositionPacket.GetPosition());
+                character.SetPosition(characterUpdatePositionPacket.GetPosition());
                 karmanServer.Broadcast(character.GetUpdatePositionPacket(), clientId);
             } else {
                 Debug.LogWarning(string.Format("Client {0} is trying to move character {1} while that characters is not under control by that client", clientId, characterUpdatePositionPacket.GetId()));

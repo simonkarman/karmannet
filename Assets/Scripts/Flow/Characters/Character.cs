@@ -12,8 +12,8 @@ public class Character : MonoBehaviour {
         spriteRenderer.color = color;
     }
 
-    protected void Update() {
-        Vector2 input = new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"), 0f) * moveSpeed;
+    protected void FixedUpdate() {
+        Vector2 input = new Vector3(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"), 0f) * moveSpeed * Time.fixedDeltaTime;
         rigidbody2d.AddForce(input, ForceMode2D.Impulse);
     }
 }

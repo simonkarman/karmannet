@@ -773,6 +773,7 @@ MonoBehaviour:
   serverStatusText: {fileID: 1309712258}
   numberOfClientsConnectedText: {fileID: 1163530168}
   scheduleShutdownButton: {fileID: 1919229507}
+  scheduleShutdownText: {fileID: 878634754}
   runningColor: {r: 0.30962977, g: 0.9245283, b: 0.49644262, a: 1}
   shutdownColor: {r: 0.8490566, g: 0.1973737, b: 0.16420433, a: 1}
 --- !u!1 &776582012

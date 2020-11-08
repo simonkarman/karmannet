@@ -24,6 +24,8 @@ public class ServerUI : MonoBehaviour {
     [SerializeField]
     private Button scheduleShutdownButton = default;
     [SerializeField]
+    private Text scheduleShutdownText = default;
+    [SerializeField]
     private Color runningColor = Color.green;
     [SerializeField]
     private Color shutdownColor = Color.red;
@@ -71,6 +73,14 @@ public class ServerUI : MonoBehaviour {
         karmanServer.OnClientConnectedCallback += (Guid clientId) => { clients[clientId].SetConnected(true); OnClientsChanged(); };
         karmanServer.OnClientDisconnectedCallback += (Guid clientId) => { clients[clientId].SetConnected(false); OnClientsChanged(); };
         karmanServer.OnClientLeftCallback += (Guid clientId) => { clients.Remove(clientId); OnClientsChanged(); };
+
+        serverFlow.OnShutdownTimeLeft += (int secondsLeft) => {
+            if (secondsLeft == 0) {
+                scheduleShutdownText.text = "Shutdown completed";
+            } else {
+                scheduleShutdownText.text = string.Format("Shutdown in {0} second(s)", secondsLeft);
+            }
+        };
         
         LatencyOracle latencyOracle = serverFlow.GetComponentInChildren<LatencyOracle>();
         latencyOracle.OnClientAverageLatencyUpdatedCallback += OnClientAverageLatencyUpdated;

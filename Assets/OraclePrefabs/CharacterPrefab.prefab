@@ -48,7 +48,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   spriteRenderer: {fileID: 3146413435632680118}
   rigidbody2d: {fileID: 358065368708234586}
-  moveSpeed: 1
+  moveSpeed: 100
 --- !u!212 &3146413435632680118
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -112,8 +112,8 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 10
-  m_LinearDrag: 0.99
+  m_Mass: 2
+  m_LinearDrag: 8
   m_AngularDrag: 0.05
   m_GravityScale: 1
   m_Material: {fileID: 0}

@@ -13,6 +13,8 @@ public class ServerFlow : MonoBehaviour {
 
     private KarmanServer server;
 
+    public Action<int> OnShutdownTimeLeft;
+
     protected void Awake() {
         server = new KarmanServer(GAME_ID);
     }
@@ -38,10 +40,15 @@ public class ServerFlow : MonoBehaviour {
     }
 
     private IEnumerator<YieldInstruction> DoScheduledShutdown() {
-        int shutdownDelay = 5;
-        MessagePacket messagePacket = new MessagePacket(string.Format("The server is shutting down in {0} seconds!", shutdownDelay));
-        server.Broadcast(messagePacket);
-        yield return new WaitForSeconds(shutdownDelay);
+        int shutdownTimeLeft = 5;
+        do {
+            MessagePacket messagePacket = new MessagePacket(string.Format("The server is shutting down in {0} seconds!", shutdownTimeLeft));
+            server.Broadcast(messagePacket);
+            OnShutdownTimeLeft(shutdownTimeLeft);
+            yield return new WaitForSeconds(1);
+            shutdownTimeLeft -= 1;
+        } while (shutdownTimeLeft > 0);
         server.Shutdown();
+        OnShutdownTimeLeft(0);
     }
 }
