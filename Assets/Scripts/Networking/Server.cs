@@ -96,7 +96,7 @@ namespace Networking {
             try {
                 rootSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 rootSocket.Bind(localEndPoint);
-                rootSocket.Listen(100);
+                rootSocket.Listen(32);
             } catch (Exception err) {
                 log.Error("Server could no start due to: {0}", err);
                 OnShutdownCallback?.Invoke();

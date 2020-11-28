@@ -48,6 +48,10 @@ namespace Logging {
             Log(LogLevel.ERROR, message, args);
         }
 
+        public void Error(Exception ex) {
+            Log(LogLevel.ERROR, "<{0}> {1}", ex.GetType().Name, ex.Message);
+        }
+
         public T Exit<T>(LogLevel logLevel, T messageObject) {
             Log(logLevel, "{0}", messageObject);
             return messageObject;
@@ -67,7 +71,7 @@ namespace Logging {
 
         public T ExitError<T>(T messageObject) {
             if (messageObject is Exception ex) {
-                Log(LogLevel.ERROR, ex.Message);
+                Error(ex);
                 return messageObject;
             } else {
                 return Exit(LogLevel.ERROR, messageObject);

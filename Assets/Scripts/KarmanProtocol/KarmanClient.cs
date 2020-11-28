@@ -49,14 +49,14 @@ namespace KarmanProtocol {
         private void OnConnected() {
             if (!hasJoined) {
                 hasJoined = true;
-                OnJoinedCallback?.Invoke();
+                SafeInvoker.Invoke(log, "OnJoinedCallback", OnJoinedCallback);
             }
             reconnectionAttempt = false;
-            OnConnectedCallback?.Invoke();
+            SafeInvoker.Invoke(log, "OnConnectedCallback", OnConnectedCallback);
         }
 
         private void OnDisconnected() {
-            OnDisconnectedCallback?.Invoke();
+            SafeInvoker.Invoke(log, "OnDisconnectedCallback", OnDisconnectedCallback);
             if (reconnectionAttempt) {
                 log.Error("Client was unable to reconnect to the server, server will now be left");
                 Leave();
@@ -64,7 +64,7 @@ namespace KarmanProtocol {
             }
             if (!hasJoined) {
                 log.Error("Client was unable to connect to the server");
-                OnLeftCallback?.Invoke();
+                SafeInvoker.Invoke(log, "OnLeftCallback", OnLeftCallback);
                 return;
             }
             if (!left) {
@@ -110,7 +110,7 @@ namespace KarmanProtocol {
 
             } else {
                 log.Trace("Received a {0} packet from server", packet.GetType().Name);
-                OnPacketReceivedCallback?.Invoke(packet);
+                SafeInvoker.Invoke(log, "OnPacketReceivedCallback", OnPacketReceivedCallback, packet);
             }
         }
 
@@ -127,7 +127,7 @@ namespace KarmanProtocol {
             } catch (Exception ex) {
                 log.Warning("Connection with server could not be disconnected, due to the following reason: {0}", ex);
             }
-            OnLeftCallback?.Invoke();
+            SafeInvoker.Invoke(log, "OnLeftCallback", OnLeftCallback);
         }
 
         public void Send(Packet packet) {

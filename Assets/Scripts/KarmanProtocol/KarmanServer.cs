@@ -65,8 +65,8 @@ namespace KarmanProtocol {
             this.gameId = gameId;
 
             server = new Server();
-            server.OnRunningCallback += OnRunning;
-            server.OnShutdownCallback += OnShutdown;
+            server.OnRunningCallback += () => SafeInvoker.Invoke(log, "OnRunningCallback", OnRunningCallback);
+            server.OnShutdownCallback += () => SafeInvoker.Invoke(log, "OnShutdownCallback", OnShutdownCallback);
             server.OnConnectedCallback += OnConnected;
             server.OnDisconnectedCallback += OnDisconnected;
             server.OnPacketReceivedCallback += OnPacketReceived;
@@ -78,14 +78,6 @@ namespace KarmanProtocol {
 
         public bool IsRunning() {
             return server.Status == ServerStatus.RUNNING;
-        }
-
-        private void OnRunning() {
-            OnRunningCallback?.Invoke();
-        }
-
-        private void OnShutdown() {
-            OnShutdownCallback?.Invoke();
         }
 
         private void OnConnected(Guid connectionId) {
@@ -119,7 +111,7 @@ namespace KarmanProtocol {
             } else {
                 log.Warning("Connection {0} that disconnected was used for client {1}, but that client is already using a new connection {2}", connectionId, clientId, client.GetConnectionId());
             }
-            OnClientDisconnectedCallback?.Invoke(clientId);
+            SafeInvoker.Invoke(log, "OnClientDisconnectedCallback", OnClientDisconnectedCallback, clientId);
         }
 
         private void OnPacketReceived(Guid connectionId, Packet packet) {
@@ -158,9 +150,10 @@ namespace KarmanProtocol {
                     connections[connectionId] = clientId;
                     log.Info("Client {0} now uses connection {1}", clientId, connectionId);
                     if (newPlayer) {
-                        OnClientJoinedCallback?.Invoke(clientId);
+                        SafeInvoker.Invoke(log, "OnClientJoinedCallback", OnClientJoinedCallback, clientId);
                     }
-                    OnClientConnectedCallback?.Invoke(clientId);
+                    // TODO: check if kicked during joining (which is a valid flow)
+                    SafeInvoker.Invoke(log, "OnClientConnectedCallback", OnClientConnectedCallback, clientId);
                 } else {
                     log.Warning("Aborted connection {0} taking over client {1} since an invalid secret was provided", connectionId, clientId);
                 }
@@ -177,7 +170,7 @@ namespace KarmanProtocol {
                 Kick(clientId);
 
             } else {
-                OnClientPacketReceivedCallback?.Invoke(clientId, packet);
+                SafeInvoker.Invoke(log, "OnClientPacketReceivedCallback", OnClientPacketReceivedCallback, clientId, packet);
             }
         }
 
@@ -188,6 +181,7 @@ namespace KarmanProtocol {
             server.Shutdown();
         }
 
+        // TODO: add reason to kicking
         public void Kick(Guid clientId) {
             log.Info("Kicking client {0}, all information about the client will be removed", clientId);
             if (!clients.TryGetValue(clientId, out Client client)) {
@@ -207,7 +201,7 @@ namespace KarmanProtocol {
                     log.Warning("Connection {0} of client {1} could not be disconnected, due to the following reason: {2}", connectionId, clientId, ex);
                 }
             }
-            OnClientLeftCallback?.Invoke(clientId);
+            SafeInvoker.Invoke(log, "OnClientLeftCallback", OnClientLeftCallback, clientId);
         }
 
         public void Broadcast(Packet packet, Guid exceptClientId = default) {
