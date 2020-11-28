@@ -29,6 +29,14 @@ public class ServerUI : MonoBehaviour {
     private Color runningColor = Color.green;
     [SerializeField]
     private Color shutdownColor = Color.red;
+    [SerializeField]
+    private Text acceptingClientsButtonText = default;
+    [SerializeField]
+    private Image acceptingClientsButtonBackground = default;
+    [SerializeField]
+    private Color acceptingClientsColor = Color.green;
+    [SerializeField]
+    private Color rejectingClientsColor = Color.red;
 
     private KarmanServer karmanServer;
     private class ServerUIClientInfo {
@@ -54,11 +62,17 @@ public class ServerUI : MonoBehaviour {
     }
     private readonly Dictionary<Guid, ServerUIClientInfo> clients = new Dictionary<Guid, ServerUIClientInfo>();
     private bool showClients = true;
+    private bool acceptingClients = false;
 
     protected void Start() {
         karmanServer = serverFlow.GetKarmanServer();
         serverProtocolText.text = KarmanServer.PROTOCOL_VERSION;
         serverIdText.text = karmanServer.id.ToString();
+        karmanServer.OnClientAcceptanceCallback += (Action<string> reject) => {
+            if (!acceptingClients) {
+                reject("Server is not accepting new clients");
+            }
+        };
         karmanServer.OnRunningCallback += () => {
             serverStatusText.text = "Running";
             serverStatusText.color = runningColor;
@@ -81,7 +95,8 @@ public class ServerUI : MonoBehaviour {
                 scheduleShutdownText.text = string.Format("Shutdown in {0} second(s)", secondsLeft);
             }
         };
-        
+        ToggleAcceptClients();
+
         LatencyOracle latencyOracle = serverFlow.GetComponentInChildren<LatencyOracle>();
         latencyOracle.OnClientAverageLatencyUpdatedCallback += OnClientAverageLatencyUpdated;
     }
@@ -117,6 +132,9 @@ public class ServerUI : MonoBehaviour {
 
     public void ScheduleShutdown() {
         serverFlow.ScheduleShutdown();
+        if (acceptingClients) {
+            ToggleAcceptClients();
+        }
     }
 
     public void BackToMainMenu() {
@@ -129,6 +147,12 @@ public class ServerUI : MonoBehaviour {
         for (int i = 0; i < clients.Count; i++) {
             playerUIs[i].gameObject.SetActive(showClients);
         }
+    }
+
+    public void ToggleAcceptClients() {
+        acceptingClients = !acceptingClients;
+        acceptingClientsButtonBackground.color = acceptingClients ? acceptingClientsColor : rejectingClientsColor;
+        acceptingClientsButtonText.text = acceptingClients ? "Accepting new Clients" : "Rejecting new Clients";
     }
 }
 

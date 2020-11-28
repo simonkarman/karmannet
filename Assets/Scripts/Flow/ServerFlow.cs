@@ -10,8 +10,6 @@ public class ServerFlow : MonoBehaviour {
 
     [SerializeField]
     private int startDelay = 2;
-    [SerializeField]
-    private int maxNumberOfClients = 2;
 
     private KarmanServer server;
 
@@ -19,11 +17,6 @@ public class ServerFlow : MonoBehaviour {
 
     protected void Awake() {
         server = new KarmanServer(GAME_ID);
-        server.OnClientAcceptanceCallback += (Action<string> reject) => {
-            if (server.GetClientCount() >= maxNumberOfClients) {
-                reject("Server full");
-            }
-        };
     }
 
     protected IEnumerator Start() {

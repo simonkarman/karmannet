@@ -89,6 +89,7 @@ namespace KarmanProtocol {
             log.Info("Connection {0} connected", connectionId);
 
             connections.Add(connectionId, Guid.Empty);
+            // TODO: Decided whether this is the correct location to send a server full packet, when server is full
             ServerInformationPacket serverInformationPacket = new ServerInformationPacket(id, gameId, PROTOCOL_VERSION);
             server.Send(connectionId, serverInformationPacket);
         }
