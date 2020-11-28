@@ -57,13 +57,13 @@ namespace Networking {
 
         private void OnConnected() {
             ThreadManager.ExecuteOnMainThread(() => {
-                OnConnectedCallback();
+                OnConnectedCallback?.Invoke();
             });
         }
 
         private void OnDisonnected() {
             ThreadManager.ExecuteOnMainThread(() => {
-                OnDisconnectedCallback();
+                OnDisconnectedCallback?.Invoke();
             });
         }
 
@@ -74,7 +74,7 @@ namespace Networking {
         private void OnFrameReceived(byte[] bytes) {
             ThreadManager.ExecuteOnMainThread(() => {
                 Packet packet = packetFactory.FromBytes(bytes);
-                OnPacketReceivedCallback(packet);
+                OnPacketReceivedCallback?.Invoke(packet);
             });
         }
 

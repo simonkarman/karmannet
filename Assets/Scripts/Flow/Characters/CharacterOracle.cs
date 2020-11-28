@@ -17,7 +17,7 @@ public class CharacterOracle : MonoBehaviour {
         karmanServer = serverFlow.GetKarmanServer();
         karmanServer.OnClientJoinedCallback += OnClientJoined;
         karmanServer.OnClientLeftCallback += OnClientLeft;
-        karmanServer.OnClientPackedReceivedCallback += OnClientPacketReceived;
+        karmanServer.OnClientPacketReceivedCallback += OnClientPacketReceived;
 
         enabled = false;
         karmanServer.OnRunningCallback += () => enabled = true;

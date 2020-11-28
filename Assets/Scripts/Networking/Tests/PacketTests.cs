@@ -73,5 +73,21 @@ namespace Tests {
             Assert.AreEqual(examplePacket.GetColor(), examplePacketFromBytes.GetColor());
             Assert.AreEqual(examplePacket.GetText(), examplePacketFromBytes.GetText());
         }
+
+        [Test]
+        public void SafeMultipleInvocationsExample() {
+            Action<string> example = null;
+            example += (string data) => { Debug.Log("First!"); };
+            example += (string data) => { Debug.Log("Second!"); throw new Exception("Exception in 2"); };
+            example += (string data) => { Debug.Log("Third!"); };
+            example += null;
+            foreach (Delegate invocation in example.GetInvocationList()) {
+                try {
+                    (invocation as Action<string>)?.Invoke("abc");
+                } catch (Exception e) {
+                    Debug.LogWarningFormat("Exception found! {0}", e);
+                }
+            }
+        }
     }
 }

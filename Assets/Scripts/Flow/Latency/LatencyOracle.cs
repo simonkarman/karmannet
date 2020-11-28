@@ -87,7 +87,7 @@ public class LatencyOracle : MonoBehaviour {
         karmanServer.OnClientConnectedCallback += OnClientConnected;
         karmanServer.OnClientDisconnectedCallback += OnClientDisconnected;
         karmanServer.OnClientLeftCallback += OnClientLeft;
-        karmanServer.OnClientPackedReceivedCallback += OnClientPacketReceived;
+        karmanServer.OnClientPacketReceivedCallback += OnClientPacketReceived;
     }
 
     protected void FixedUpdate() {

@@ -8,7 +8,7 @@ namespace KarmanProtocol {
     public class KarmanServer {
         private static readonly Logger log = Logger.For<KarmanServer>();
 
-        public const string PROTOCOL_VERSION = "0.1.0";
+        public const string PROTOCOL_VERSION = "0.2.0";
 
         private class Client {
             private readonly Guid clientId;
@@ -58,7 +58,7 @@ namespace KarmanProtocol {
         public Action<Guid> OnClientConnectedCallback;
         public Action<Guid> OnClientDisconnectedCallback;
         public Action<Guid> OnClientLeftCallback;
-        public Action<Guid, Packet> OnClientPackedReceivedCallback;
+        public Action<Guid, Packet> OnClientPacketReceivedCallback;
 
         public KarmanServer(Guid gameId) {
             id = Guid.NewGuid();
@@ -81,11 +81,11 @@ namespace KarmanProtocol {
         }
 
         private void OnRunning() {
-            OnRunningCallback();
+            OnRunningCallback?.Invoke();
         }
 
         private void OnShutdown() {
-            OnShutdownCallback();
+            OnShutdownCallback?.Invoke();
         }
 
         private void OnConnected(Guid connectionId) {
@@ -119,7 +119,7 @@ namespace KarmanProtocol {
             } else {
                 log.Warning("Connection {0} that disconnected was used for client {1}, but that client is already using a new connection {2}", connectionId, clientId, client.GetConnectionId());
             }
-            OnClientDisconnectedCallback(clientId);
+            OnClientDisconnectedCallback?.Invoke(clientId);
         }
 
         private void OnPacketReceived(Guid connectionId, Packet packet) {
@@ -158,9 +158,9 @@ namespace KarmanProtocol {
                     connections[connectionId] = clientId;
                     log.Info("Client {0} now uses connection {1}", clientId, connectionId);
                     if (newPlayer) {
-                        OnClientJoinedCallback(clientId);
+                        OnClientJoinedCallback?.Invoke(clientId);
                     }
-                    OnClientConnectedCallback(clientId);
+                    OnClientConnectedCallback?.Invoke(clientId);
                 } else {
                     log.Warning("Aborted connection {0} taking over client {1} since an invalid secret was provided", connectionId, clientId);
                 }
@@ -177,7 +177,7 @@ namespace KarmanProtocol {
                 Kick(clientId);
 
             } else {
-                OnClientPackedReceivedCallback(clientId, packet);
+                OnClientPacketReceivedCallback?.Invoke(clientId, packet);
             }
         }
 
@@ -207,7 +207,7 @@ namespace KarmanProtocol {
                     log.Warning("Connection {0} of client {1} could not be disconnected, due to the following reason: {2}", connectionId, clientId, ex);
                 }
             }
-            OnClientLeftCallback(clientId);
+            OnClientLeftCallback?.Invoke(clientId);
         }
 
         public void Broadcast(Packet packet, Guid exceptClientId = default) {

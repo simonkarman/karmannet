@@ -99,7 +99,7 @@ namespace Networking {
                 rootSocket.Listen(100);
             } catch (Exception err) {
                 log.Error("Server could no start due to: {0}", err);
-                OnShutdownCallback();
+                OnShutdownCallback?.Invoke();
                 return;
             }
 
@@ -114,32 +114,32 @@ namespace Networking {
 
         private void OnRunning() {
             ThreadManager.ExecuteOnMainThread(() => {
-                OnRunningCallback();
+                OnRunningCallback?.Invoke();
             });
         }
 
         private void OnShutdown() {
             ThreadManager.ExecuteOnMainThread(() => {
-                OnShutdownCallback();
+                OnShutdownCallback?.Invoke();
             });
         }
 
         private void OnConnected(Guid connectionId) {
             ThreadManager.ExecuteOnMainThread(() => {
-                OnConnectedCallback(connectionId);
+                OnConnectedCallback?.Invoke(connectionId);
             });
         }
 
         private void OnDisconnected(Guid connectionId) {
             connections.Remove(connectionId);
             ThreadManager.ExecuteOnMainThread(() => {
-                OnDisconnectedCallback(connectionId);
+                OnDisconnectedCallback?.Invoke(connectionId);
             });
         }
 
         private void OnFrameReceived(Guid connectionId, byte[] bytes) {
             ThreadManager.ExecuteOnMainThread(() => {
-                OnPacketReceivedCallback(connectionId, packetFactory.FromBytes(bytes));
+                OnPacketReceivedCallback?.Invoke(connectionId, packetFactory.FromBytes(bytes));
             });
         }
 
