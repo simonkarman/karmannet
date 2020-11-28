@@ -25,7 +25,7 @@ public class ServerUIClient : MonoBehaviour {
     }
 
     public void Kick() {
-        serverFlow.GetKarmanServer().Kick(clientId);
+        serverFlow.GetKarmanServer().Kick(clientId, "Server admin decision");
     }
 
     public void SetAverageLatency(int averageLatency) {

@@ -54,6 +54,7 @@ namespace KarmanProtocol {
 
         public Action OnRunningCallback;
         public Action OnShutdownCallback;
+        public Action<Action<string>> OnClientAcceptanceCallback;
         public Action<Guid> OnClientJoinedCallback;
         public Action<Guid> OnClientConnectedCallback;
         public Action<Guid> OnClientDisconnectedCallback;
@@ -78,6 +79,10 @@ namespace KarmanProtocol {
 
         public bool IsRunning() {
             return server.Status == ServerStatus.RUNNING;
+        }
+
+        public int GetClientCount() {
+            return clients.Count;
         }
 
         private void OnConnected(Guid connectionId) {
@@ -138,6 +143,18 @@ namespace KarmanProtocol {
                 } else {
                     Guid clientSecret = clientInformationPacket.GetClientSecret();
                     log.Info("Connection {0} is creating a new client {1} (secret {2}-**...)", connectionId, clientId, clientSecret.ToString().Substring(0, 13));
+
+                    List<string> rejections = new List<string>();
+                    SafeInvoker.Invoke(log, "OnClientAcceptanceCallback", OnClientAcceptanceCallback, (rejection) => rejections.Add(rejection));
+                    if (rejections.Count > 0) {
+                        string reason = string.Join(", ", rejections);
+                        string message = string.Format("Connection {0} was rejected trying to create client {1}. Reason: {2}", connectionId, clientId, reason);
+                        log.Warning(message);
+                        server.Send(connectionId, new LeavePacket(reason));
+                        server.Disconnect(connectionId);
+                        return;
+                    }
+
                     connectedClient = new Client(clientId, clientSecret);
                     clients.Add(clientId, connectedClient);
                     newPlayer = true;
@@ -152,8 +169,11 @@ namespace KarmanProtocol {
                     if (newPlayer) {
                         SafeInvoker.Invoke(log, "OnClientJoinedCallback", OnClientJoinedCallback, clientId);
                     }
-                    // TODO: check if kicked during joining (which is a valid flow)
-                    SafeInvoker.Invoke(log, "OnClientConnectedCallback", OnClientConnectedCallback, clientId);
+                    if (clients.ContainsKey(clientId)) {
+                        SafeInvoker.Invoke(log, "OnClientConnectedCallback", OnClientConnectedCallback, clientId);
+                    } else {
+                        log.Info("Client {0} was kicked while it was joining the server", clientId);
+                    }
                 } else {
                     log.Warning("Aborted connection {0} taking over client {1} since an invalid secret was provided", connectionId, clientId);
                 }
@@ -166,8 +186,9 @@ namespace KarmanProtocol {
             }
             log.Trace("Received a {0} packet for client {1}", packet.GetType().Name, clientId);
 
-            if (packet is LeavePacket) {
-                Kick(clientId);
+            if (packet is LeavePacket leavePacket) {
+                log.Info("Client left. Reason: {0}", leavePacket.GetReason());
+                Kick(clientId, "Client left");
 
             } else {
                 SafeInvoker.Invoke(log, "OnClientPacketReceivedCallback", OnClientPacketReceivedCallback, clientId, packet);
@@ -176,14 +197,13 @@ namespace KarmanProtocol {
 
         public void Shutdown() {
             foreach (Guid clientId in new List<Client>(clients.Values).Select(client => client.GetClientId())) {
-                Kick(clientId);
+                Kick(clientId, "Server shutdown");
             }
             server.Shutdown();
         }
 
-        // TODO: add reason to kicking
-        public void Kick(Guid clientId) {
-            log.Info("Kicking client {0}, all information about the client will be removed", clientId);
+        public void Kick(Guid clientId, string reason) {
+            log.Info("Kicking client {0}, all information about the client will be removed. Reason: {1}", clientId, reason);
             if (!clients.TryGetValue(clientId, out Client client)) {
                 log.Warning("Cannot kick client {0}, because that client does not exist", clientId);
                 return;
@@ -194,7 +214,7 @@ namespace KarmanProtocol {
             if (connectionId != Guid.Empty) {
                 connections[connectionId] = Guid.Empty;
                 try {
-                    server.Send(connectionId, new LeavePacket());
+                    server.Send(connectionId, new LeavePacket(reason));
                     System.Threading.Thread.Sleep(100); // TODO: fix this.
                     server.Disconnect(connectionId);
                 } catch (Exception ex) {

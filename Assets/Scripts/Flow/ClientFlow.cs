@@ -24,7 +24,7 @@ public class ClientFlow : MonoBehaviour {
 
     public void OnDestroy() {
         if (karmanClient.IsConnected()) {
-            karmanClient.Leave();
+            karmanClient.Leave("Client destroyed");
         }
     }
 

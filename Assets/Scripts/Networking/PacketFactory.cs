@@ -42,7 +42,7 @@ namespace Networking {
 
         private void Assign(int identifier, Type type) {
             if (!type.IsClass || type.IsAbstract || !typeof(Packet).IsAssignableFrom(type)) {
-                throw log.ExitError(new Exception(string.Format(
+                throw log.ExitError(new PacketFactoryAssignException(string.Format(
                     "Cannot assign type {0}, because (a) it is not a class, or (b) it is an abstract class, or (c) it does not derive from the Packet class.",
                     type.Name,
                     identifier
@@ -50,14 +50,14 @@ namespace Networking {
             }
             ConstructorInfo constructor = type.GetConstructor(new[] { typeof(byte[]) });
             if (constructor == null) {
-                throw log.ExitError(new Exception(string.Format(
+                throw log.ExitError(new PacketFactoryAssignException(string.Format(
                     "Cannot assign type {0}, because no constructor exists in {0} that takes a single parameter of type byte[].",
                     type.Name,
                     identifier
                 )));
             }
             if (constructors.TryGetValue(identifier, out ConstructorInfo existingConstructorInfo)) {
-                throw log.ExitError(new Exception(string.Format(
+                throw log.ExitError(new PacketFactoryAssignException(string.Format(
                     "Cannot assign type {0} to identifier {1}, because the identifier {1} has already been assigned to type {2}.",
                     type.Name,
                     identifier,
@@ -65,7 +65,7 @@ namespace Networking {
                 )));
             }
             if (identifiers.TryGetValue(type, out int existingPacketIdentifier)) {
-                throw log.ExitError(new Exception(string.Format(
+                throw log.ExitError(new PacketFactoryAssignException(string.Format(
                     "Cannot assign type {0} to identifier {1}, because the type {0} has already been assigned to identifier {2}.",
                     type.Name,
                     identifier,
@@ -80,39 +80,47 @@ namespace Networking {
             packet.Validate();
             Type type = packet.GetType();
             if (!identifiers.TryGetValue(type, out int identifier)) {
-                throw log.ExitError(new Exception(string.Format(
+                throw log.ExitError(new PacketFactoryAssignException(string.Format(
                     "Cannot get bytes for the given packet, because identifier of type {0} cannot be found. Ensure that you first assign a packet identifier to the packet type using PacketFactory.Assign().",
                     type.Name
                 )));
             }
-            byte[] prefix = BitConverter.GetBytes(identifier);
-            byte[] data = packet.GetBytes();
+            try {
+                byte[] prefix = BitConverter.GetBytes(identifier);
+                byte[] data = packet.GetBytes();
 
-            int length = prefix.Length + data.Length;
-            byte[] bytes = new byte[length];
-            prefix.CopyTo(bytes, 0);
-            data.CopyTo(bytes, prefix.Length);
+                int length = prefix.Length + data.Length;
+                byte[] bytes = new byte[length];
+                prefix.CopyTo(bytes, 0);
+                data.CopyTo(bytes, prefix.Length);
 
-            return bytes;
+                return bytes;
+            } catch (Exception) {
+                throw log.ExitError(new PacketFactoryBytesException(string.Format("An exception occurred trying to get bytes of {0}", packet.GetType().Name)));
+            }
         }
 
         public Packet FromBytes(byte[] bytes) {
             if (bytes == null | bytes.Length < 4) {
-                throw log.ExitError(new Exception(string.Format("Cannot get packet for the given bytes, because the byte array has a {0}.", bytes == null
+                throw log.ExitError(new PacketFactoryBytesException(string.Format("Cannot get packet for the given bytes, because the byte array has a {0}.", bytes == null
                     ? "value of null"
                     : string.Format("length of {0} byte(s), while it should be at least 4 bytes long.", bytes.Length)
                 )));
             }
             int identifier = BitConverter.ToInt32(bytes, 0);
             if (!constructors.TryGetValue(identifier, out ConstructorInfo packetConstructor)) {
-                throw log.ExitError(new Exception(string.Format("Given byte[] has an identifier {0}, which has not been assigned to a type.", identifier)));
+                throw log.ExitError(new PacketFactoryAssignException(string.Format("Given byte[] has an identifier {0}, which has not been assigned to a type.", identifier)));
             }
-            const int PREFIX_LENGTH = 4;
-            byte[] packetData = new byte[bytes.Length - PREFIX_LENGTH];
-            Array.Copy(bytes, PREFIX_LENGTH, packetData, 0, packetData.Length);
-            Packet packet = (Packet)packetConstructor.Invoke(new[] { packetData });
-            packet.Validate();
-            return packet;
+            try {
+                const int PREFIX_LENGTH = 4;
+                byte[] packetData = new byte[bytes.Length - PREFIX_LENGTH];
+                Array.Copy(bytes, PREFIX_LENGTH, packetData, 0, packetData.Length);
+                Packet packet = (Packet)packetConstructor.Invoke(new[] { packetData });
+                packet.Validate();
+                return packet;
+            } catch (Exception) {
+                throw log.ExitError(new PacketFactoryBytesException(string.Format("Ab exception occurred trying to construct {0} from byte[]", packetConstructor.DeclaringType.Name)));
+            }
         }
 
         public override string ToString() {

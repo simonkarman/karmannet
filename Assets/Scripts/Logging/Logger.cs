@@ -49,7 +49,7 @@ namespace Logging {
         }
 
         public void Error(Exception ex) {
-            Log(LogLevel.ERROR, "<{0}> {1}", ex.GetType().Name, ex.Message);
+            Log(LogLevel.ERROR, "{0} {1}", ex.GetType().Name, ex.Message);
         }
 
         public T Exit<T>(LogLevel logLevel, T messageObject) {

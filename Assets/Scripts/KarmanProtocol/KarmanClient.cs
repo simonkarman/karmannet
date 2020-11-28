@@ -59,7 +59,7 @@ namespace KarmanProtocol {
             SafeInvoker.Invoke(log, "OnDisconnectedCallback", OnDisconnectedCallback);
             if (reconnectionAttempt) {
                 log.Error("Client was unable to reconnect to the server, server will now be left");
-                Leave();
+                Leave("Reconnection failed");
                 return;
             }
             if (!hasJoined) {
@@ -93,20 +93,21 @@ namespace KarmanProtocol {
                         "Leaving server since it uses a different protocol version ({0}) than the client ({1})",
                         serverInformationPacket.GetProtocolVersion(), KarmanServer.PROTOCOL_VERSION
                     );
-                    Leave();
+                    Leave("Protocol mismatch");
                 } else if (!gameId.Equals(serverInformationPacket.GetGameId())) {
                     log.Warning(
                         "Leaving server since server is build for a different game id ({0}) than the client ({1})",
                         serverInformationPacket.GetGameId(), gameId
                     );
-                    Leave();
+                    Leave("Game mismatch");
                 } else {
                     ClientInformationPacket provideUsernamePacket = new ClientInformationPacket(id, secret);
                     client.Send(provideUsernamePacket);
                 }
 
-            } else if (packet is LeavePacket) {
-                Leave();
+            } else if (packet is LeavePacket leavePacket) {
+                log.Info("Kicked by server. Reason: {0}", leavePacket.GetReason());
+                Leave("Kicked by server");
 
             } else {
                 log.Trace("Received a {0} packet from server", packet.GetType().Name);
@@ -114,14 +115,15 @@ namespace KarmanProtocol {
             }
         }
 
-        public void Leave() {
+        public void Leave(string reason) {
+            log.Info("Leaving server. Reason: {0}", reason);
             if (left) {
                 log.Warning("Client cannot leave the server if it already left");
                 return;
             }
             left = true;
             try {
-                client.Send(new LeavePacket());
+                client.Send(new LeavePacket(reason));
                 System.Threading.Thread.Sleep(100); // TODO: fix this.
                 client.Disconnect();
             } catch (Exception ex) {

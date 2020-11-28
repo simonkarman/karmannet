@@ -47,7 +47,7 @@ public class ClientUI : MonoBehaviour {
     }
 
     public void Leave() {
-        karmanClient.Leave();
+        karmanClient.Leave("Client decision");
     }
 
     public void BackToMainMenu() {
