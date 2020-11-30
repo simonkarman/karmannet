@@ -58,7 +58,7 @@ namespace KarmanProtocol {
         public Action<Guid> OnClientJoinedCallback;
         public Action<Guid> OnClientConnectedCallback;
         public Action<Guid> OnClientDisconnectedCallback;
-        public Action<Guid> OnClientLeftCallback;
+        public Action<Guid, string> OnClientLeftCallback;
         public Action<Guid, Packet> OnClientPacketReceivedCallback;
 
         public KarmanServer(Guid gameId) {
@@ -163,6 +163,7 @@ namespace KarmanProtocol {
                 if (connectedClient.TrySetConnectionId(connectionId, clientInformationPacket.GetClientSecret())) {
                     if (previousConnectionId != Guid.Empty) {
                         log.Info("Disconnecting previous connection {0}, since connection {1} is taking over a client {2}", previousConnectionId, connectionId, clientId);
+                        server.Send(previousConnectionId, new LeavePacket("You connected from another device."));
                         server.Disconnect(previousConnectionId);
                     }
                     connections[connectionId] = clientId;
@@ -222,7 +223,7 @@ namespace KarmanProtocol {
                     log.Warning("Connection {0} of client {1} could not be disconnected, due to the following reason: {2}", connectionId, clientId, ex);
                 }
             }
-            SafeInvoker.Invoke(log, "OnClientLeftCallback", OnClientLeftCallback, clientId);
+            SafeInvoker.Invoke(log, "OnClientLeftCallback", OnClientLeftCallback, clientId, reason);
         }
 
         public void Broadcast(Packet packet, Guid exceptClientId = default) {

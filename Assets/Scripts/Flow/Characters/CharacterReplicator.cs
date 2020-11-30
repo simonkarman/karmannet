@@ -57,7 +57,7 @@ public class CharacterReplicator : MonoBehaviour {
         characters[packet.GetId()].SetPosition(packet.GetPosition());
     }
 
-    private void OnLeft() {
+    private void OnLeft(string reason) {
         foreach (var character in characters.Values) {
             character.Destroy();
         }

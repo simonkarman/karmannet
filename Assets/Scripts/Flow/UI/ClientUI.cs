@@ -40,8 +40,8 @@ public class ClientUI : MonoBehaviour {
             clientConnectionStatusText.color = failureColor;
             leaveButton.interactable = false;
         };
-        karmanClient.OnLeftCallback += () => {
-            clientStatusText.text = "Left";
+        karmanClient.OnLeftCallback += (reason) => {
+            clientStatusText.text = "Left: " + reason;
             clientStatusText.color = failureColor;
         };
     }

@@ -40,7 +40,7 @@ public class CharacterOracle : MonoBehaviour {
         characters.Add(clientId, character);
     }
 
-    private void OnClientLeft(Guid clientId) {
+    private void OnClientLeft(Guid clientId, string reason) {
         CharacterData character = characters[clientId];
         Debug.Log(string.Format("Destroying character {0} because its client {1} left the server", character.GetId(), clientId));
         character.Destroy();

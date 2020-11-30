@@ -83,10 +83,10 @@ public class ServerUI : MonoBehaviour {
             serverStatusText.color = shutdownColor;
             scheduleShutdownButton.interactable = false;
         };
-        karmanServer.OnClientJoinedCallback += (Guid clientId) => { clients.Add(clientId, new ServerUIClientInfo(clientId, false)); OnClientsChanged(); };
-        karmanServer.OnClientConnectedCallback += (Guid clientId) => { clients[clientId].SetConnected(true); OnClientsChanged(); };
-        karmanServer.OnClientDisconnectedCallback += (Guid clientId) => { clients[clientId].SetConnected(false); OnClientsChanged(); };
-        karmanServer.OnClientLeftCallback += (Guid clientId) => { clients.Remove(clientId); OnClientsChanged(); };
+        karmanServer.OnClientJoinedCallback += (clientId) => { clients.Add(clientId, new ServerUIClientInfo(clientId, false)); OnClientsChanged(); };
+        karmanServer.OnClientConnectedCallback += (clientId) => { clients[clientId].SetConnected(true); OnClientsChanged(); };
+        karmanServer.OnClientDisconnectedCallback += (clientId) => { clients[clientId].SetConnected(false); OnClientsChanged(); };
+        karmanServer.OnClientLeftCallback += (clientId, reason) => { clients.Remove(clientId); OnClientsChanged(); };
 
         serverFlow.OnShutdownTimeLeft += (int secondsLeft) => {
             if (secondsLeft == 0) {

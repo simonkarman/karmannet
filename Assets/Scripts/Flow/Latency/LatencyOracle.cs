@@ -118,7 +118,7 @@ public class LatencyOracle : MonoBehaviour {
         latencyDataPerClient[clientId].SetConnected(false);
     }
 
-    private void OnClientLeft(Guid clientId) {
+    private void OnClientLeft(Guid clientId, string reason) {
         latencyDataPerClient.Remove(clientId);
     }
 

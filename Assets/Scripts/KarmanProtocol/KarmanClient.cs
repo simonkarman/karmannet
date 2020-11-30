@@ -20,7 +20,7 @@ namespace KarmanProtocol {
         public Action OnJoinedCallback;
         public Action OnConnectedCallback;
         public Action OnDisconnectedCallback;
-        public Action OnLeftCallback;
+        public Action<string> OnLeftCallback;
         public Action<Packet> OnPacketReceivedCallback;
 
         public KarmanClient(Guid id, Guid gameId, Guid secret) {
@@ -63,8 +63,9 @@ namespace KarmanProtocol {
                 return;
             }
             if (!hasJoined) {
-                log.Error("Client was unable to connect to the server");
-                SafeInvoker.Invoke(log, "OnLeftCallback", OnLeftCallback);
+                string message = "Client was unable to connect to the server";
+                log.Error(message);
+                SafeInvoker.Invoke(log, "OnLeftCallback", OnLeftCallback, message);
                 return;
             }
             if (!left) {
@@ -106,8 +107,9 @@ namespace KarmanProtocol {
                 }
 
             } else if (packet is LeavePacket leavePacket) {
-                log.Info("Kicked by server. Reason: {0}", leavePacket.GetReason());
-                Leave("Kicked by server");
+                string message = string.Format("Kicked by server. Reason: {0}", leavePacket.GetReason());
+                log.Info(message);
+                Leave(message);
 
             } else {
                 log.Trace("Received a {0} packet from server", packet.GetType().Name);
@@ -129,7 +131,7 @@ namespace KarmanProtocol {
             } catch (Exception ex) {
                 log.Warning("Connection with server could not be disconnected, due to the following reason: {0}", ex);
             }
-            SafeInvoker.Invoke(log, "OnLeftCallback", OnLeftCallback);
+            SafeInvoker.Invoke(log, "OnLeftCallback", OnLeftCallback, reason);
         }
 
         public void Send(Packet packet) {

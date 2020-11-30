@@ -28,7 +28,7 @@ public class MineReplicator : MonoBehaviour {
         new MineData(packet.GetId(), packet.GetPosition(), packet.GetDuration(), Instantiate(minePrefab, transform));
     }
 
-    private void OnLeft() {
+    private void OnLeft(string reason) {
         foreach (Mine mine in transform.GetComponentsInChildren<Mine>()) {
             Destroy(mine.gameObject);
         }
