@@ -102,7 +102,7 @@ namespace KarmanProtocol {
             connections.Remove(connectionId);
 
             if (clientId == Guid.Empty) {
-                log.Info("Connection {0} has successfully disconnected (because it was no longer / not yet connected to a client)", connectionId);
+                log.Info("Connection {0} has successfully disconnected (it was no longer / not yet connected to a client)", connectionId);
                 return;
             }
 
@@ -113,11 +113,11 @@ namespace KarmanProtocol {
             if (client.GetConnectionId() == connectionId) {
                 log.Warning("Connection {0} dropped while it was still connected to client {1} (client is still available for reconnection attempts)", connectionId, clientId);
                 client.RemoveConnectionId();
+                SafeInvoker.Invoke(log, "OnClientDisconnectedCallback", OnClientDisconnectedCallback, clientId);
 
             } else {
                 log.Warning("Connection {0} that disconnected was used for client {1}, but that client is already using a new connection {2}", connectionId, clientId, client.GetConnectionId());
             }
-            SafeInvoker.Invoke(log, "OnClientDisconnectedCallback", OnClientDisconnectedCallback, clientId);
         }
 
         private void OnPacketReceived(Guid connectionId, Packet packet) {
@@ -163,6 +163,7 @@ namespace KarmanProtocol {
                 if (connectedClient.TrySetConnectionId(connectionId, clientInformationPacket.GetClientSecret())) {
                     if (previousConnectionId != Guid.Empty) {
                         log.Info("Disconnecting previous connection {0}, since connection {1} is taking over a client {2}", previousConnectionId, connectionId, clientId);
+                        connections[previousConnectionId] = Guid.Empty;
                         server.Send(previousConnectionId, new LeavePacket("You connected from another device."));
                         server.Disconnect(previousConnectionId);
                     }
