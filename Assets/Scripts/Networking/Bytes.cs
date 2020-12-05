@@ -55,6 +55,10 @@ namespace Networking {
             }
         }
 
+        public static byte[] Of(bool boolean) {
+            return BitConverter.GetBytes(boolean);
+        }
+
         public static byte[] Of(int integer) {
             return BitConverter.GetBytes(integer);
         }
@@ -121,6 +125,10 @@ namespace Networking {
             byte[] guidBytes = new byte[16];
             Array.Copy(bytes, startIndex, guidBytes, 0, 16);
             return new Guid(guidBytes);
+        }
+
+        public static bool GetBoolean(byte[] bytes, int startIndex = 0) {
+            return BitConverter.ToBoolean(bytes, startIndex);
         }
 
         public static int GetInt32(byte[] bytes, int startIndex = 0) {

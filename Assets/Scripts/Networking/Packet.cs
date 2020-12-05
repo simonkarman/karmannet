@@ -28,6 +28,12 @@ namespace Networking {
             marker += amount;
         }
 
+        protected bool ReadBoolean() {
+            bool value = Bytes.GetBoolean(bytes, marker);
+            marker += 1;
+            return value;
+        }
+
         protected int ReadInt() {
             int value = Bytes.GetInt32(bytes, marker);
             marker += 4;
