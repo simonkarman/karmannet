@@ -229,7 +229,7 @@ namespace KarmanProtocol {
 
         public void Broadcast(Packet packet, Guid exceptClientId = default) {
             foreach (var client in clients.Values) {
-                if (client.GetConnectionId() == Guid.Empty || client.GetClientId() == exceptClientId) {
+                if (!client.IsConnected() || client.GetClientId() == exceptClientId) {
                     continue;
                 }
                 server.Send(client.GetConnectionId(), packet);
@@ -239,6 +239,9 @@ namespace KarmanProtocol {
         public void Send(Guid clientId, Packet packet) {
             if (!clients.TryGetValue(clientId, out Client client)) {
                 throw log.ExitError(new Exception(string.Format("Cannot send a message to client {0}, because that client does not exist", clientId)));
+            }
+            if (!client.IsConnected()) {
+                return;
             }
             server.Send(client.GetConnectionId(), packet);
         }

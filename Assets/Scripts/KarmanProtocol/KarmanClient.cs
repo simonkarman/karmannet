@@ -12,10 +12,12 @@ namespace KarmanProtocol {
         public readonly Guid id;
         public readonly Guid gameId;
         public readonly Guid secret;
+
+        private Guid serverId;
         private IPEndPoint endpoint;
         private bool hasJoined = false;
-        private bool left = false;
-        private bool reconnectionAttempt = false;
+        private bool hasLeft = false;
+        private int reconnectionAttempt = -1;
 
         public Action OnJoinedCallback;
         public Action OnConnectedCallback;
@@ -30,9 +32,15 @@ namespace KarmanProtocol {
             SetupClient();
         }
 
+        public Guid GetServerInformation() {
+            if (!IsConnected()) {
+                return Guid.Empty;
+            }
+            return serverId;
+        }
+
         private void SetupClient() {
             client = new Client();
-            client.OnConnectedCallback += OnConnected;
             client.OnDisconnectedCallback += OnDisconnected;
             client.OnPacketReceivedCallback += OnPacketReceived;
         }
@@ -46,18 +54,9 @@ namespace KarmanProtocol {
             client.Start(endpoint);
         }
 
-        private void OnConnected() {
-            if (!hasJoined) {
-                hasJoined = true;
-                SafeInvoker.Invoke(log, "OnJoinedCallback", OnJoinedCallback);
-            }
-            reconnectionAttempt = false;
-            SafeInvoker.Invoke(log, "OnConnectedCallback", OnConnectedCallback);
-        }
-
         private void OnDisconnected() {
             SafeInvoker.Invoke(log, "OnDisconnectedCallback", OnDisconnectedCallback);
-            if (reconnectionAttempt) {
+            if (reconnectionAttempt >= 3) {
                 log.Error("Client was unable to reconnect to the server, server will now be left");
                 Leave("Reconnection failed");
                 return;
@@ -68,9 +67,9 @@ namespace KarmanProtocol {
                 SafeInvoker.Invoke(log, "OnLeftCallback", OnLeftCallback, message);
                 return;
             }
-            if (!left) {
-                log.Warning("Connection with server lost, immediately trying to reconnect");
-                reconnectionAttempt = true;
+            if (!hasLeft) {
+                reconnectionAttempt += 1;
+                log.Warning("Connection with server lost, immediately trying to reconnect (try {0} out of 3)", reconnectionAttempt + 1);
                 SetupClient();
                 client.Start(endpoint);
             }
@@ -86,8 +85,8 @@ namespace KarmanProtocol {
 
             } else if (packet is ServerInformationPacket serverInformationPacket) {
                 log.Info(
-                    "Server send its information serverId={0} and protocolVersion={1}",
-                    serverInformationPacket.GetServerId(), serverInformationPacket.GetProtocolVersion()
+                    "Received information from the server: gameId={0}, serverId={1}, and protocolVersion={2}",
+                    serverInformationPacket.GetGameId(), serverInformationPacket.GetServerId(), serverInformationPacket.GetProtocolVersion()
                 );
                 if (KarmanServer.PROTOCOL_VERSION != serverInformationPacket.GetProtocolVersion()) {
                     log.Warning(
@@ -102,8 +101,17 @@ namespace KarmanProtocol {
                     );
                     Leave("Game mismatch");
                 } else {
+                    reconnectionAttempt = -1;
+                    serverId = serverInformationPacket.GetServerId();
+
                     ClientInformationPacket provideUsernamePacket = new ClientInformationPacket(id, secret);
                     client.Send(provideUsernamePacket);
+
+                    if (!hasJoined) {
+                        hasJoined = true;
+                        SafeInvoker.Invoke(log, "OnJoinedCallback", OnJoinedCallback);
+                    }
+                    SafeInvoker.Invoke(log, "OnConnectedCallback", OnConnectedCallback);
                 }
 
             } else if (packet is LeavePacket leavePacket) {
@@ -119,11 +127,11 @@ namespace KarmanProtocol {
 
         public void Leave(string reason) {
             log.Info("Leaving server. Reason: {0}", reason);
-            if (left) {
+            if (hasLeft) {
                 log.Warning("Client cannot leave the server if it already left");
                 return;
             }
-            left = true;
+            hasLeft = true;
             try {
                 client.Send(new LeavePacket(reason));
                 System.Threading.Thread.Sleep(100); // TODO: fix this.
