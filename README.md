@@ -22,7 +22,7 @@ A roadmap for the library can be found on this [trello board](https://trello.com
 To get started, either directly copy the source code of this library into your project or add the compiled dll(s) as a dependency to your project. The easiest setup to get started looks like this:
 ```csharp
 // Define the game information
-Guid gameId = Guid.Parse("<insert an random uuid that identifies your game here>");
+Guid gameId = Guid.Parse("<insert an uuid that identifies your game here>");
 string gameVersion = "0.0.1-alpha";
 
 // Starting a server on port 14641
@@ -54,7 +54,10 @@ client.OnPacketReceived += (Packet packet) => {
 > Note: The library is currently under development so the api might receive significant changes up until `version 1.0.0` is released. Backwards compatibility is not guarenteed up until that point.
 
 ## Layered Structure
-The karman multiplayer library is build out of 3 layers. The first layer is TCP. The karman multiplayer library is build on top of tcp. The second layer is the KarmanProtocol layer. This layer abstract individual tcp connections and lets you work with clients. The third layer is your game layer, which can contain many different modules that use the events invoked by the KarmanProtocol layer. Some example modules are a PingModule to keep track of the latency of the connected clients
+The karman multiplayer library is build out of 3 layers.
+  1. The first layer is TCP. The karman multiplayer library is build on top of tcp.
+  2. The second layer is the KarmanProtocol layer. This layer abstract individual tcp connections and lets you work with clients.
+  3. The third layer is your game layer, which can contain many different modules that use the events invoked by the KarmanProtocol layer. An example module is a ping module to keep track of the latency of the connected clients. For this game layer the oracle / replicator structure is recommended, however you are free to build and create modules in whatever way you prefer.
 
 ## Development Guide
 The development guide explains how the karman multiplayer library can be used. First the tcp protocol and bytes arrays are explained. Then the packets that the library uses are explained. Then the KarmanServer is discussed in depth. After that the KarmanClient is discussed. And lastly the Oracle and Replicator pattern is explained.
@@ -75,14 +78,18 @@ Reference Articles:
 - [Length Prefixed Message Framing](https://blog.stephencleary.com/2009/04/sample-code-length-prefix-message.html) by Stephen Cleary
 
 ### KarmanServer
+KarmanServer provides the interface to start and use the KarmanProtocol on the server of your game. The below section describe how to construct, start, use callbacks, send packets, kick clients, and shutdown the server.
+
+#### Constructing
 Setting up a server is as easy as creating an instance of the `KarmanServer` class and then calling the `Start` method on it. To create the instance you have to provide a `gameId` for you server. This game id is unique for you project, and identifies the game that this server is running. You also need to provide the `gameVersion`, this identifies the version of the game, and will ensure that the client and server will run the same version of the game. You can optionally provide a password that the clients will need to provide when connecting.
 
 ```csharp
-Guid gameId = Guid.Parse("<insert uuid here>");
+Guid gameId = Guid.Parse("<insert an uuid that identifies your game here>");
 string gameVersion = "0.0.1-alpha";
 KarmanServer server = new KarmanServer("My First Server", gameId, gameVersion, "sup3r s3cr3t p4ssw0rd");
 ```
 
+#### Starting
 After creating the `KarmanServer` instance you can start the server at any time using the `Start(port)` method by providing the port on which the server should listen for incoming connections.
 
 ```csharp
@@ -91,12 +98,13 @@ server.Start(serverPort);
 ```
 > Ensure that you setup your port forwarding and dns configuration appropiatly to ensure that your clients can reach your server.
 
+#### Callbacks
 The server is build using event callbacks. Everytime something interesting happens, the server will invoke an event callback. The event callbacks can be used to execute logic when the server starts or shutsdown, clients join or leave the game, or packets from clients are received. All callbacks are executed on the same thread as was used to run the server start command. The following events exists and can be subscribed to.
 
 ```csharp
 server.OnRunningCallback += () => {}; // Invoked when the server has start up successfully and is now running
 server.OnShutdownCallback += () => {}; // Invoked when the server has shutdown
-server.OnClientAcceptanceCallback; += (Action<string> reject) => { reject("Server is full"); }; // Invoked when a client wants to join, gives you the ability to reject clients from joining the server.
+server.OnClientAcceptanceCallback; += (Action<string> reject) => { reject("Server is full"); }; // Invoked when a client wants to join, gives you the ability to reject clients joining the server.
 server.OnClientJoinedCallback += (Guid clientId, string clientName) => {}; // Invoked when a client joins the server
 server.OnClientConnectedCallback += (Guid clientId) => {}; // Invoked when a client connects to the server
 server.OnClientDisconnectedCallback += (Guid clientId) => {}; // Invoked when a client disconnects from the server
@@ -108,6 +116,7 @@ A client can join and leave the server. A client uses a connection to connect to
 
 If you're developing your gaming using the karman multiplayer library you don't have to worry about individual connections. That is handled with in the KarmanProtocol layer, all you're dealing with are clients. Sometimes it is however interesting to know when a client has dropped its connection and when it reconnects. For example to show a message to the other clients that a client is currently not connected. For this reason the `OnClientConnected` and `OnClientDisconnected` callbacks are exposed.
 
+#### Sending Packets
 After your server is up and running you can send packets to connected clients. You can send a packet to an individual client or broadcast a packet to all clients that are connected. Packets can only be sent to clients that are connected. Packets you sent to clients that are not connected are discarded, packets you send to clients that don't exist will throw an error.
 
 ```csharp
@@ -117,10 +126,16 @@ server.Broadcast(packet); // Send a packet to all connected clients
 server.Broadcast(packet, skipClientId); // Send a packet to all connected clients except one
 ```
 
+#### Kicking clients
+> TODO: More information about kicking clients coming soon.
+
+#### Shutting down
+> TODO: More information about shutting down coming soon.
+
 ### KarmanClient
 > TODO: More information about clients (incl. secrets, reconnection attempts, callbacks) coming soon.
 
-If a client drops its connection it will attempt to reconnect using a new connection. As long as the client uses the same clientId and clientSecret it will be able to connect as a client already known on the server.
+If a client drops its connection it will attempt to reconnect using a new connection. As long as the client uses the same clientId, clientName and clientSecret it will be able to reconnect as a client already known on the server.
 
 ### Oracle and replicator pattern
 > TODO: More information about the 'oracle and replicator'-pattern coming soon.
