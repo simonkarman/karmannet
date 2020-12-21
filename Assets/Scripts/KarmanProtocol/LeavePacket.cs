@@ -2,7 +2,7 @@
 
 namespace KarmanProtocol {
     public class LeavePacket : Packet {
-        private string reason;
+        private readonly string reason;
 
         public LeavePacket(byte[] bytes) : base(bytes) {
             reason = ReadString();
@@ -11,7 +11,9 @@ namespace KarmanProtocol {
             this.reason = reason;
         }
 
-        public override void Validate() { }
+        public override bool IsValid() {
+            return reason != null && reason.Length > 0;
+        }
 
         public string GetReason() {
             return reason;

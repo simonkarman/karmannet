@@ -40,16 +40,22 @@ public class ServerUI : MonoBehaviour {
 
     private KarmanServer karmanServer;
     private class ServerUIClientInfo {
-        private Guid clientId;
+        private readonly Guid clientId;
+        private readonly string clientName;
         private bool connected;
 
-        public ServerUIClientInfo(Guid clientId, bool connected) {
+        public ServerUIClientInfo(Guid clientId, string clientName, bool connected) {
             this.clientId = clientId;
+            this.clientName = clientName;
             this.connected = connected;
         }
 
         public Guid GetClientId() {
             return clientId;
+        }
+
+        public string GetClientName() {
+            return clientName;
         }
 
         public void SetConnected(bool connected) {
@@ -66,7 +72,7 @@ public class ServerUI : MonoBehaviour {
 
     protected void Start() {
         karmanServer = serverFlow.GetKarmanServer();
-        serverProtocolText.text = KarmanServer.PROTOCOL_VERSION;
+        serverProtocolText.text = KarmanServer.KARMAN_PROTOCOL_VERSION;
         serverIdText.text = karmanServer.id.ToString();
         karmanServer.OnClientAcceptanceCallback += (Action<string> reject) => {
             if (!acceptingClients) {
@@ -83,7 +89,7 @@ public class ServerUI : MonoBehaviour {
             serverStatusText.color = shutdownColor;
             scheduleShutdownButton.interactable = false;
         };
-        karmanServer.OnClientJoinedCallback += (clientId) => { clients.Add(clientId, new ServerUIClientInfo(clientId, false)); OnClientsChanged(); };
+        karmanServer.OnClientJoinedCallback += (clientId, clientName) => { clients.Add(clientId, new ServerUIClientInfo(clientId, clientName, false)); OnClientsChanged(); };
         karmanServer.OnClientConnectedCallback += (clientId) => { clients[clientId].SetConnected(true); OnClientsChanged(); };
         karmanServer.OnClientDisconnectedCallback += (clientId) => { clients[clientId].SetConnected(false); OnClientsChanged(); };
         karmanServer.OnClientLeftCallback += (clientId, reason) => { clients.Remove(clientId); OnClientsChanged(); };
@@ -117,7 +123,7 @@ public class ServerUI : MonoBehaviour {
                 playerUI = playerUIs[i];
                 playerUI.gameObject.SetActive(showClients);
             }
-            playerUI.SetFrom(serverFlow, clients[i].GetClientId(), clients[i].IsConnected());
+            playerUI.SetFrom(serverFlow, clients[i].GetClientId(), clients[i].GetClientName(), clients[i].IsConnected());
         }
         numberOfClientsConnectedText.text = string.Format("{0} client(s) connected", clients.Count);
     }

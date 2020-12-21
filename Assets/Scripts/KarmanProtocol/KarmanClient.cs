@@ -10,11 +10,15 @@ namespace KarmanProtocol {
         private Client client;
 
         public readonly Guid id;
-        public readonly Guid gameId;
         public readonly Guid secret;
+        public readonly string name;
+        public readonly Guid gameId;
+        public readonly string gameVersion;
 
-        private Guid serverId;
+        private string serverPassword;
+        private ServerInformationPacket serverInformation;
         private IPEndPoint endpoint;
+        private bool hasBeenConnectedAtLeastOnce = false;
         private bool hasJoined = false;
         private bool hasLeft = false;
         private int reconnectionAttempt = -1;
@@ -25,33 +29,39 @@ namespace KarmanProtocol {
         public Action<string> OnLeftCallback;
         public Action<Packet> OnPacketReceivedCallback;
 
-        public KarmanClient(Guid id, Guid gameId, Guid secret) {
+        public KarmanClient(Guid id, Guid secret, string name, Guid gameId, string gameVersion) {
             this.id = id;
-            this.gameId = gameId;
             this.secret = secret;
+            this.name = name;
+            this.gameId = gameId;
+            this.gameVersion = gameVersion;
             SetupClient();
         }
 
-        public Guid GetServerInformation() {
-            if (!IsConnected()) {
-                return Guid.Empty;
-            }
-            return serverId;
+        public ServerInformationPacket GetServerInformation() {
+            return serverInformation;
         }
 
         private void SetupClient() {
             client = new Client();
+            client.OnConnectedCallback += OnConnected;
             client.OnDisconnectedCallback += OnDisconnected;
             client.OnPacketReceivedCallback += OnPacketReceived;
         }
 
-        public void Start(string connectionString, int defaultPort) {
+        public void Start(string connectionString, int defaultPort, string serverPassword = KarmanServer.DEFAULT_PASSWORD) {
+            string usePassword = serverPassword == null ? "NO" : "YES";
             log.Info(
-                "KarmanClient: Starting KarmanClient with connectionString={0} (defaultPort={1}), clientId={2}",
-                connectionString, defaultPort, id
+                "KarmanClient: Starting KarmanClient with connectionString={0} (defaultPort={1}), clientId={2}, usePassword={3})",
+                connectionString, defaultPort, id, usePassword
             );
+            this.serverPassword = serverPassword ?? KarmanServer.DEFAULT_PASSWORD;
             endpoint = ConnectionString.Parse(connectionString, defaultPort);
             client.Start(endpoint);
+        }
+
+        private void OnConnected() {
+            hasBeenConnectedAtLeastOnce = true;
         }
 
         private void OnDisconnected() {
@@ -61,15 +71,17 @@ namespace KarmanProtocol {
                 Leave("Reconnection failed");
                 return;
             }
-            if (!hasJoined) {
+            if (!hasBeenConnectedAtLeastOnce) {
                 string message = "Client was unable to connect to the server";
                 log.Error(message);
+                hasLeft = true;
                 SafeInvoker.Invoke(log, "OnLeftCallback", OnLeftCallback, message);
                 return;
             }
             if (!hasLeft) {
                 reconnectionAttempt += 1;
                 log.Warning("Connection with server lost, immediately trying to reconnect (try {0} out of 3)", reconnectionAttempt + 1);
+                hasBeenConnectedAtLeastOnce = false;
                 SetupClient();
                 client.Start(endpoint);
             }
@@ -85,34 +97,44 @@ namespace KarmanProtocol {
 
             } else if (packet is ServerInformationPacket serverInformationPacket) {
                 log.Info(
-                    "Received information from the server: gameId={0}, serverId={1}, and protocolVersion={2}",
-                    serverInformationPacket.GetGameId(), serverInformationPacket.GetServerId(), serverInformationPacket.GetProtocolVersion()
+                    "Received information from the server: serverId={0}, serverName={1}, gameId={2}, gameVersion={3}, and karmanProtocolVersion={4}",
+                    serverInformationPacket.GetServerId(), serverInformationPacket.GetServerName(),
+                    serverInformationPacket.GetGameId(), serverInformationPacket.GetGameVersion(),
+                    serverInformationPacket.GetKarmanProtocolVersion()
                 );
-                if (KarmanServer.PROTOCOL_VERSION != serverInformationPacket.GetProtocolVersion()) {
+                if (!gameId.Equals(serverInformationPacket.GetGameId())) {
                     log.Warning(
-                        "Leaving server since it uses a different protocol version ({0}) than the client ({1})",
-                        serverInformationPacket.GetProtocolVersion(), KarmanServer.PROTOCOL_VERSION
-                    );
-                    Leave("Protocol mismatch");
-                } else if (!gameId.Equals(serverInformationPacket.GetGameId())) {
-                    log.Warning(
-                        "Leaving server since server is build for a different game id ({0}) than the client ({1})",
+                        "Leaving server since server is running a different game ({0}) than the client ({1}).",
                         serverInformationPacket.GetGameId(), gameId
                     );
                     Leave("Game mismatch");
+                } else if (!gameVersion.Equals(serverInformationPacket.GetGameVersion())) {
+                    log.Warning(
+                        "Leaving server since it is running a different game version ({0}) than the client ({1})",
+                        serverInformationPacket.GetGameVersion(), gameVersion
+                    );
+                    Leave("Game version mismatch");
+                } else if (KarmanServer.KARMAN_PROTOCOL_VERSION != serverInformationPacket.GetKarmanProtocolVersion()) {
+                    log.Warning(
+                        "Leaving server since it uses a different karman protocol version ({0}) than the client ({1})",
+                        serverInformationPacket.GetKarmanProtocolVersion(), KarmanServer.KARMAN_PROTOCOL_VERSION
+                    );
+                    Leave("Karman protocol mismatch");
                 } else {
                     reconnectionAttempt = -1;
-                    serverId = serverInformationPacket.GetServerId();
-
-                    ClientInformationPacket provideUsernamePacket = new ClientInformationPacket(id, secret);
-                    client.Send(provideUsernamePacket);
-
-                    if (!hasJoined) {
-                        hasJoined = true;
-                        SafeInvoker.Invoke(log, "OnJoinedCallback", OnJoinedCallback);
-                    }
-                    SafeInvoker.Invoke(log, "OnConnectedCallback", OnConnectedCallback);
+                    serverInformation = serverInformationPacket;
+                    ClientInformationPacket clientInformationPacket = new ClientInformationPacket(id, name, secret, serverPassword);
+                    client.Send(clientInformationPacket);
                 }
+
+            } else if (packet is ClientAcceptedPacket clientAcceptedPacket) {
+                log.Info("Server acceptected");
+
+                if (!hasJoined) {
+                    hasJoined = true;
+                    SafeInvoker.Invoke(log, "OnJoinedCallback", OnJoinedCallback);
+                }
+                SafeInvoker.Invoke(log, "OnConnectedCallback", OnConnectedCallback);
 
             } else if (packet is LeavePacket leavePacket) {
                 string message = string.Format("Kicked by server. Reason: {0}", leavePacket.GetReason());

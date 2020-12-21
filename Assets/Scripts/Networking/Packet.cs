@@ -14,7 +14,7 @@ namespace Networking {
             return bytes;
         }
 
-        public abstract void Validate();
+        public abstract bool IsValid();
 
         protected bool IsDone() {
             return marker >= bytes.Length;

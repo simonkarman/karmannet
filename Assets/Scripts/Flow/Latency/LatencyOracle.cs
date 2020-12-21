@@ -106,7 +106,7 @@ public class LatencyOracle : MonoBehaviour {
         }
     }
 
-    private void OnClientJoined(Guid clientId) {
+    private void OnClientJoined(Guid clientId, string clientName) {
         latencyDataPerClient.Add(clientId, new ClientLatencyData(maxLatencyHistorySize));
     }
 

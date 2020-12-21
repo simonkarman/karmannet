@@ -8,15 +8,18 @@ namespace KarmanProtocol {
     public class KarmanServer {
         private static readonly Logger log = Logger.For<KarmanServer>();
 
-        public const string PROTOCOL_VERSION = "0.2.0";
+        public const string KARMAN_PROTOCOL_VERSION = "0.3.1";
+        public const string DEFAULT_PASSWORD = "";
 
         private class Client {
             private readonly Guid clientId;
             private readonly Guid clientSecret;
+            private readonly string clientName;
             private Guid connectionId;
 
-            public Client(Guid clientId, Guid clientSecret) {
+            public Client(Guid clientId, string clientName, Guid clientSecret) {
                 this.clientId = clientId;
+                this.clientName = clientName;
                 this.clientSecret = clientSecret;
             }
 
@@ -24,12 +27,16 @@ namespace KarmanProtocol {
                 return clientId;
             }
 
+            public string GetClientName() {
+                return clientName;
+            }
+
             public void RemoveConnectionId() {
                 connectionId = Guid.Empty;
             }
 
-            public bool TrySetConnectionId(Guid connectionId, Guid clientSecret) {
-                if (!clientSecret.Equals(this.clientSecret)) {
+            public bool TryTakeOverConnection(Guid connectionId, Guid clientSecret, string clientName) {
+                if (!clientSecret.Equals(this.clientSecret) || !clientName.Equals(this.clientName)) {
                     return false;
                 }
                 this.connectionId = connectionId;
@@ -46,8 +53,11 @@ namespace KarmanProtocol {
         }
 
         public readonly Guid id;
+        public readonly string name;
         public readonly Guid gameId;
+        public readonly string gameVersion;
 
+        private readonly string password;
         private readonly Server server;
         private readonly Dictionary<Guid, Guid> connections = new Dictionary<Guid, Guid>();
         private readonly Dictionary<Guid, Client> clients = new Dictionary<Guid, Client>();
@@ -55,15 +65,18 @@ namespace KarmanProtocol {
         public Action OnRunningCallback;
         public Action OnShutdownCallback;
         public Action<Action<string>> OnClientAcceptanceCallback;
-        public Action<Guid> OnClientJoinedCallback;
+        public Action<Guid, string> OnClientJoinedCallback;
         public Action<Guid> OnClientConnectedCallback;
         public Action<Guid> OnClientDisconnectedCallback;
         public Action<Guid, string> OnClientLeftCallback;
         public Action<Guid, Packet> OnClientPacketReceivedCallback;
 
-        public KarmanServer(Guid gameId) {
+        public KarmanServer(string name, Guid gameId, string gameVersion, string password = DEFAULT_PASSWORD) {
             id = Guid.NewGuid();
+            this.name = name;
             this.gameId = gameId;
+            this.gameVersion = gameVersion;
+            this.password = password ?? DEFAULT_PASSWORD;
 
             server = new Server();
             server.OnRunningCallback += () => SafeInvoker.Invoke(log, "OnRunningCallback", OnRunningCallback);
@@ -89,8 +102,7 @@ namespace KarmanProtocol {
             log.Info("Connection {0} connected", connectionId);
 
             connections.Add(connectionId, Guid.Empty);
-            // TODO: Decided whether this is the correct location to send a server full packet, when server is full
-            ServerInformationPacket serverInformationPacket = new ServerInformationPacket(id, gameId, PROTOCOL_VERSION);
+            ServerInformationPacket serverInformationPacket = new ServerInformationPacket(id, name, gameId, gameVersion, KARMAN_PROTOCOL_VERSION);
             server.Send(connectionId, serverInformationPacket);
         }
 
@@ -135,7 +147,20 @@ namespace KarmanProtocol {
                 if (clientId != Guid.Empty) {
                     throw log.ExitError(new Exception(string.Format("Connection {0} cannot create a new client {1} because the connection already points to client {2}", connectionId, clientInformationPacket.GetClientId(), clientId)));
                 }
+
+                if (!password.Equals(clientInformationPacket.GetServerPassword())) {
+                    if (password.Equals(string.Empty)) {
+                        log.Warning("Connection {0} provided a server password for a server that does not require a password to join. The provided password is ignored.", connectionId, clientId);
+                    } else {
+                        log.Warning("Connection {0} provided an incorrect server password while trying to create client {1}", connectionId, clientId);
+                        server.Send(connectionId, new LeavePacket("Server password incorrect"));
+                        server.Disconnect(connectionId);
+                        return;
+                    }
+                }
+
                 clientId = clientInformationPacket.GetClientId();
+                string clientName = clientInformationPacket.GetClientName();
                 Guid previousConnectionId = Guid.Empty;
                 bool newPlayer = false;
                 if (clients.TryGetValue(clientId, out Client connectedClient)) {
@@ -149,18 +174,17 @@ namespace KarmanProtocol {
                     SafeInvoker.Invoke(log, "OnClientAcceptanceCallback", OnClientAcceptanceCallback, (rejection) => rejections.Add(rejection));
                     if (rejections.Count > 0) {
                         string reason = string.Join(", ", rejections);
-                        string message = string.Format("Connection {0} was rejected trying to create client {1}. Reason: {2}", connectionId, clientId, reason);
-                        log.Warning(message);
+                        log.Warning("Connection {0} was rejected trying to create client {1}. Reason: {2}", connectionId, clientId, reason);
                         server.Send(connectionId, new LeavePacket(reason));
                         server.Disconnect(connectionId);
                         return;
                     }
 
-                    connectedClient = new Client(clientId, clientSecret);
+                    connectedClient = new Client(clientId, clientName, clientSecret);
                     clients.Add(clientId, connectedClient);
                     newPlayer = true;
                 }
-                if (connectedClient.TrySetConnectionId(connectionId, clientInformationPacket.GetClientSecret())) {
+                if (connectedClient.TryTakeOverConnection(connectionId, clientInformationPacket.GetClientSecret(), clientName)) {
                     if (previousConnectionId != Guid.Empty) {
                         log.Info("Disconnecting previous connection {0}, since connection {1} is taking over a client {2}", previousConnectionId, connectionId, clientId);
                         connections[previousConnectionId] = Guid.Empty;
@@ -168,19 +192,23 @@ namespace KarmanProtocol {
                         server.Disconnect(previousConnectionId);
                     }
                     connections[connectionId] = clientId;
-                    log.Info("Client {0} now uses connection {1}", clientId, connectionId);
+                    server.Send(connectionId, new ClientAcceptedPacket());
+                    log.Info("Client {0} accepted on connection {1}", clientId, connectionId);
                     if (newPlayer) {
-                        SafeInvoker.Invoke(log, "OnClientJoinedCallback", OnClientJoinedCallback, clientId);
+                        SafeInvoker.Invoke(log, "OnClientJoinedCallback", OnClientJoinedCallback, clientId, clientName);
                     }
                     if (clients.ContainsKey(clientId)) {
                         SafeInvoker.Invoke(log, "OnClientConnectedCallback", OnClientConnectedCallback, clientId);
                     } else {
                         log.Info("Client {0} was kicked while it was joining the server", clientId);
                     }
+                    return;
                 } else {
-                    log.Warning("Aborted connection {0} taking over client {1} since an invalid secret was provided", connectionId, clientId);
+                    log.Warning("Aborted connection {0} taking over client {1} since an incorrect secret was provided or the client name is no longer the same", connectionId, clientId);
+                    server.Send(connectionId, new LeavePacket("Client secret or name incorrect"));
+                    server.Disconnect(connectionId);
+                    return;
                 }
-                return;
             }
 
             if (!clients.TryGetValue(clientId, out Client client)) {

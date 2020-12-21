@@ -21,7 +21,10 @@ public class MineSpawnPacket : Packet {
         this.duration = duration;
     }
 
-    public override void Validate() { }
+    public override bool IsValid() {
+        return id != null && id != Guid.Empty
+            && duration > 0f;
+    }
 
     public Guid GetId() {
         return id;

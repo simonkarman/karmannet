@@ -33,7 +33,7 @@ public class MineOracle : MonoBehaviour {
         karmanServer.OnShutdownCallback += () => enabled = false;
     }
 
-    private void OnClientJoined(Guid clientId) {
+    private void OnClientJoined(Guid clientId, string clientName) {
         Debug.Log(string.Format("Sending all existing mines to client {0} because it joined the server", clientId));
         foreach (var mine in mines.Values) {
             karmanServer.Send(clientId, mine.GetSpawnPacket());

@@ -24,7 +24,10 @@ public class CharacterSpawnPacket : Packet {
         this.color = color;
     }
 
-    public override void Validate() { }
+    public override bool IsValid() {
+        return id != null && id != Guid.Empty
+            && clientId != null && clientId != Guid.Empty;
+    }
 
     public Guid GetId() {
         return id;

@@ -14,7 +14,12 @@ public class ClientFlow : MonoBehaviour {
     private KarmanClient karmanClient;
 
     protected void Awake() {
-        karmanClient = new KarmanClient(Guid.NewGuid(), ServerFlow.GAME_ID, Guid.NewGuid());
+        Guid clientId = Guid.NewGuid();
+        karmanClient = new KarmanClient(
+            clientId, Guid.NewGuid(),
+            "Client " + clientId.ToString().Substring(0, 4),
+            ServerFlow.GAME_ID, ServerFlow.GAME_VERSION
+        );
     }
 
     public void Start() {

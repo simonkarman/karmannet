@@ -14,7 +14,9 @@ namespace KarmanProtocol {
             this.message = message;
         }
 
-        public override void Validate() { }
+        public override bool IsValid() {
+            return message != null && message.Length > 0;
+        }
 
         public string GetMessage() {
             return message;

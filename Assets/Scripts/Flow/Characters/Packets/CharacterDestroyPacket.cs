@@ -12,7 +12,9 @@ public class CharacterDestroyPacket : Packet {
         this.id = id;
     }
 
-    public override void Validate() { }
+    public override bool IsValid() {
+        return id != null && id != Guid.Empty;
+    }
 
     public Guid GetId() {
         return id;

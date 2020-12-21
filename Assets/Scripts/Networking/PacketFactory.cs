@@ -76,8 +76,21 @@ namespace Networking {
             constructors.Add(identifier, constructor);
         }
 
+        private void ValidateOrThrow(string action, Packet packet) {
+            bool isValid;
+            try {
+                isValid = packet.IsValid();
+            } catch (Exception ex) {
+                log.Error("An exception occured while trying to validate {0}: {1}", packet.GetType().Name, ex.Message);
+                isValid = false;
+            }
+            if (!isValid) {
+                throw log.ExitError(new PacketInvalidException(action, packet.GetType().Name));
+            }
+        }
+
         public byte[] GetBytes(Packet packet) {
-            packet.Validate();
+            ValidateOrThrow("Tried to send", packet);
             Type type = packet.GetType();
             if (!identifiers.TryGetValue(type, out int identifier)) {
                 throw log.ExitError(new PacketFactoryAssignException(string.Format(
@@ -111,16 +124,17 @@ namespace Networking {
             if (!constructors.TryGetValue(identifier, out ConstructorInfo packetConstructor)) {
                 throw log.ExitError(new PacketFactoryAssignException(string.Format("Given byte[] has an identifier {0}, which has not been assigned to a type.", identifier)));
             }
+            const int PREFIX_LENGTH = 4;
+            byte[] packetData = new byte[bytes.Length - PREFIX_LENGTH];
+            Array.Copy(bytes, PREFIX_LENGTH, packetData, 0, packetData.Length);
+            Packet packet;
             try {
-                const int PREFIX_LENGTH = 4;
-                byte[] packetData = new byte[bytes.Length - PREFIX_LENGTH];
-                Array.Copy(bytes, PREFIX_LENGTH, packetData, 0, packetData.Length);
-                Packet packet = (Packet)packetConstructor.Invoke(new[] { packetData });
-                packet.Validate();
-                return packet;
+                packet = (Packet)packetConstructor.Invoke(new[] { packetData });
             } catch (Exception) {
                 throw log.ExitError(new PacketFactoryBytesException(string.Format("Ab exception occurred trying to construct {0} from byte[]", packetConstructor.DeclaringType.Name)));
             }
+            ValidateOrThrow("Received", packet);
+            return packet;
         }
 
         public override string ToString() {

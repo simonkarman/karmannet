@@ -14,7 +14,9 @@ namespace KarmanProtocol {
             this.pingId = pingId;
         }
 
-        public override void Validate() { }
+        public override bool IsValid() {
+            return pingId != null && pingId != Guid.Empty;
+        }
 
         public Guid GetPingId() {
             return pingId;

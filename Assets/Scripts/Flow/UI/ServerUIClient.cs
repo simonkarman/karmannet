@@ -6,18 +6,18 @@ public class ServerUIClient : MonoBehaviour {
     [SerializeField]
     private Text clientIdText = default;
     [SerializeField]
-    private Text clientConnectedText = default;
+    private Text clientTitleText = default;
     [SerializeField]
     private Text clientAverageLatencyText = default;
 
     private ServerFlow serverFlow;
     private Guid clientId;
 
-    public void SetFrom(ServerFlow serverFlow, Guid clientId, bool isConnected) {
+    public void SetFrom(ServerFlow serverFlow, Guid clientId, string clientName, bool isConnected) {
         this.serverFlow = serverFlow;
         this.clientId = clientId;
         clientIdText.text = clientId.ToString();
-        clientConnectedText.text = isConnected ? "Client (connected)" : "Client (not connected)";
+        clientTitleText.text = clientName + (isConnected ? " (connected)" : " (not connected)");
     }
 
     public Guid GetClientId() {

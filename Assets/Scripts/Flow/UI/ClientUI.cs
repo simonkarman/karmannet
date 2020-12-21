@@ -25,7 +25,7 @@ public class ClientUI : MonoBehaviour {
     protected void Start() {
         karmanClient = clientFlow.GetKarmanClient();
         clientIdText.text = karmanClient.id.ToString();
-        clientProtocolText.text = KarmanServer.PROTOCOL_VERSION;
+        clientProtocolText.text = KarmanServer.KARMAN_PROTOCOL_VERSION;
         karmanClient.OnJoinedCallback += () => {
             clientStatusText.text = "Joined";
             clientStatusText.color = successColor;

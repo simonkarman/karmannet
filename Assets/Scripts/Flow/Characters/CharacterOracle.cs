@@ -24,7 +24,7 @@ public class CharacterOracle : MonoBehaviour {
         karmanServer.OnShutdownCallback += () => enabled = false;
     }
 
-    private void OnClientJoined(Guid clientId) {
+    private void OnClientJoined(Guid clientId, string clientName) {
         CharacterData character = new CharacterData(
                 Guid.NewGuid(),
                 clientId,
@@ -32,7 +32,7 @@ public class CharacterOracle : MonoBehaviour {
                 Color.HSVToRGB((totalNumberOfCharactersJoined++ % 7) / 7f, 1f, 1f),
                 Instantiate(characterPrefab, transform)
             );
-        Debug.Log(string.Format("Spawning a new character {0} because client {1} joined the server", character.GetId(), clientId));
+        Debug.Log(string.Format("Spawning a new character {0} because client {1} (with name {2}) joined the server", character.GetId(), clientId, clientName));
         foreach (var otherCharacter in characters.Values) {
             karmanServer.Send(clientId, otherCharacter.GetSpawnPacket());
         }
