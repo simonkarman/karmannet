@@ -50,7 +50,7 @@ namespace KarmanProtocol {
         }
 
         public void Start(string connectionString, int defaultPort, string serverPassword = KarmanServer.DEFAULT_PASSWORD) {
-            string usePassword = serverPassword == null ? "NO" : "YES";
+            string usePassword = string.IsNullOrEmpty(serverPassword) ? "NO" : "YES";
             log.Info(
                 "KarmanClient: Starting KarmanClient with connectionString={0} (defaultPort={1}), clientId={2}, usePassword={3})",
                 connectionString, defaultPort, id, usePassword

@@ -10,16 +10,15 @@ namespace KarmanProtocol {
         private readonly string karmanProtocolVersion;
 
         public ServerInformationPacket(byte[] bytes) : base(bytes) {
-            byte[][] split = Bytes.Split(bytes);
-            serverId = Bytes.GetGuid(split[0]);
-            serverName = Bytes.GetString(split[1]);
-            gameId = Bytes.GetGuid(split[2]);
-            gameVersion = Bytes.GetString(split[3]);
-            karmanProtocolVersion = Bytes.GetString(split[4]);
+            serverId = ReadGuid();
+            serverName = ReadString();
+            gameId = ReadGuid();
+            gameVersion = ReadString();
+            karmanProtocolVersion = ReadString();
         }
 
         public ServerInformationPacket(Guid serverId, string serverName, Guid gameId, string gameVersion, string karmanProtocolVersion) : base(
-            Bytes.Merge(Bytes.Of(serverId), Bytes.Of(serverName), Bytes.Of(gameId), Bytes.Of(gameVersion), Bytes.Of(karmanProtocolVersion))
+            Bytes.Pack(Bytes.Of(serverId), Bytes.Of(serverName), Bytes.Of(gameId), Bytes.Of(gameVersion), Bytes.Of(karmanProtocolVersion))
         ) {
             this.serverId = serverId;
             this.serverName = serverName;

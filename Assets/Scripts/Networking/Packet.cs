@@ -4,7 +4,7 @@ namespace Networking {
     public abstract class Packet {
 
         private int marker = 0;
-        private byte[] bytes;
+        private readonly byte[] bytes;
 
         protected Packet(byte[] bytes) {
             this.bytes = bytes;
@@ -46,8 +46,14 @@ namespace Networking {
             return value;
         }
 
-        protected string ReadString(int count = -1) {
-            string value = Bytes.GetString(bytes, marker, count);
+        protected string ReadString() {
+            string value = Bytes.GetString(bytes, out int count, marker);
+            marker += count;
+            return value;
+        }
+
+        protected string ReadRawString(int count = -1) {
+            string value = Bytes.GetRawString(bytes, marker, count);
             if (count < 0) {
                 marker = bytes.Length;
             } else {

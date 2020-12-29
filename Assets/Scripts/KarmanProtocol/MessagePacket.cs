@@ -5,11 +5,11 @@ namespace KarmanProtocol {
         private readonly string message;
 
         public MessagePacket(byte[] bytes) : base(bytes) {
-            message = ReadString();
+            message = ReadRawString();
         }
 
         public MessagePacket(string message) : base(
-            Bytes.Of(message)
+            Bytes.Of(message, Bytes.StringMode.RAW)
         ) {
             this.message = message;
         }

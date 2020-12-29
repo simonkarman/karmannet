@@ -11,7 +11,7 @@ namespace Tests {
             string inputA = "abc";
             Guid inputB = Guid.NewGuid();
 
-            byte[] merged = Bytes.Merge(Encoding.ASCII.GetBytes(inputA), inputB.ToByteArray());
+            byte[] merged = Bytes.SplittablePack(Encoding.ASCII.GetBytes(inputA), inputB.ToByteArray());
             byte[][] splits = Bytes.Split(merged);
 
             Assert.AreEqual(splits.Length, 2);
@@ -21,7 +21,7 @@ namespace Tests {
 
         [Test]
         public void ShouldMergeAndSplitCorrectlyForEmptyArrays() {
-            byte[] merged = Bytes.Merge(new byte[0], new byte[0]);
+            byte[] merged = Bytes.SplittablePack(new byte[0], new byte[0]);
             byte[][] splits = Bytes.Split(merged);
             Assert.AreEqual(splits.Length, 2);
         }
@@ -33,8 +33,16 @@ namespace Tests {
 
         [Test]
         public void ShouldBytifyAStringCorrectly() {
-            Assert.AreEqual(Bytes.GetString(Bytes.Of("abc")), "abc");
-            Assert.AreEqual(Bytes.GetString(Bytes.Of("✂️")), "✂️");
+            Assert.AreEqual(Bytes.GetString(Bytes.Of("abc"), out int count1), "abc");
+            Assert.AreEqual(Bytes.GetString(Bytes.Of("✂️"), out int count2), "✂️");
+            Assert.AreEqual(7, count1);
+            Assert.AreEqual(10, count2);
+        }
+
+        [Test]
+        public void ShouldBytifyARawStringCorrectly() {
+            Assert.AreEqual(Bytes.GetRawString(Bytes.Of("abc", Bytes.StringMode.RAW)), "abc");
+            Assert.AreEqual(Bytes.GetRawString(Bytes.Of("✂️", Bytes.StringMode.RAW)), "✂️");
         }
 
         [Test]

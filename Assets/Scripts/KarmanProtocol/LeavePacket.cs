@@ -5,9 +5,9 @@ namespace KarmanProtocol {
         private readonly string reason;
 
         public LeavePacket(byte[] bytes) : base(bytes) {
-            reason = ReadString();
+            reason = ReadRawString();
         }
-        public LeavePacket(string reason) : base(Bytes.Of(reason)) {
+        public LeavePacket(string reason) : base(Bytes.Of(reason, Bytes.StringMode.RAW)) {
             this.reason = reason;
         }
 

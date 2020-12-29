@@ -9,15 +9,14 @@ namespace KarmanProtocol {
         private readonly string serverPassword;
 
         public ClientInformationPacket(byte[] bytes) : base(bytes) {
-            byte[][] splits = Bytes.Split(bytes);
-            clientId = Bytes.GetGuid(splits[0]);
-            clientName = Bytes.GetString(splits[1]);
-            clientSecret = Bytes.GetGuid(splits[2]);
-            serverPassword = Bytes.GetString(splits[3]);
+            clientId = ReadGuid();
+            clientName = ReadString();
+            clientSecret = ReadGuid();
+            serverPassword = ReadString();
         }
 
         public ClientInformationPacket(Guid clientId, string clientName, Guid clientSecret, string serverPassword) : base(
-            Bytes.Merge(Bytes.Of(clientId), Bytes.Of(clientName), Bytes.Of(clientSecret), Bytes.Of(serverPassword))
+            Bytes.Pack(Bytes.Of(clientId), Bytes.Of(clientName), Bytes.Of(clientSecret), Bytes.Of(serverPassword))
         ) {
             this.clientId = clientId;
             this.clientSecret = clientSecret;

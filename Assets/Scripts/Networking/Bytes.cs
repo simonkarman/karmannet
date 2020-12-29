@@ -8,7 +8,12 @@ namespace Networking {
     public static class Bytes {
         private static readonly Logger log = new Logger(typeof(Bytes));
 
-        public static byte[] Merge(params byte[][] arrays) {
+        public enum StringMode {
+            RAW = 0,
+            LENGTH_PREFIXED = 1,
+        }
+
+        public static byte[] SplittablePack(params byte[][] arrays) {
             int byteLength = arrays.Length * 4 + arrays.Sum(array => array.Length);
             byte[] mergedBytes = new byte[byteLength];
             int currentIndex = 0;
@@ -19,7 +24,7 @@ namespace Networking {
                 Array.Copy(array, 0, mergedBytes, currentIndex + 4, array.Length);
                 currentIndex += 4 + array.Length;
             }
-            log.Trace("Merged {0} byte array(s) into on array with a total length of {1} bytes", arrays.Length, mergedBytes.Length);
+            log.Trace("Packed {0} byte array(s) into a splittable array with a total length of {1} bytes", arrays.Length, mergedBytes.Length);
             return mergedBytes;
         }
 
@@ -45,7 +50,7 @@ namespace Networking {
                 Array.Copy(arrays[i], 0, mergedBytes, currentIndex, arrays[i].Length);
                 currentIndex += arrays[i].Length;
             }
-            log.Trace("Packed {0} byte array(s) into on array with a total length of {1} bytes", arrays.Length, mergedBytes.Length);
+            log.Trace("Packed {0} byte array(s) into an array with a total length of {1} bytes", arrays.Length, mergedBytes.Length);
             return mergedBytes;
         }
 
@@ -67,8 +72,12 @@ namespace Networking {
             return BitConverter.GetBytes(value);
         }
 
-        public static byte[] Of(string text) {
-            return Encoding.UTF8.GetBytes(text);
+        public static byte[] Of(string text, StringMode mode = StringMode.LENGTH_PREFIXED) {
+            byte[] bytes = Encoding.UTF8.GetBytes(text);
+            if (mode == StringMode.RAW) {
+                return bytes;
+            }
+            return SplittablePack(bytes);
         }
 
         public static byte[] Of(Guid guid) {
@@ -114,7 +123,13 @@ namespace Networking {
             return new UnityEngine.Vector2(x, y);
         }
 
-        public static string GetString(byte[] bytes, int startIndex = 0, int count = -1) {
+        public static string GetString(byte[] bytes, out int count, int startIndex = 0) {
+            int length = GetInt32(bytes, startIndex);
+            count = 4 + length;
+            return GetRawString(bytes, startIndex + 4, length);
+        }
+
+        public static string GetRawString(byte[] bytes, int startIndex = 0, int count = -1) {
             if (count < 0) {
                 count = bytes.Length - startIndex;
             }
