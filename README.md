@@ -7,14 +7,12 @@ A C# library that provides networking logic for multiplayer games.
 ## Goal
 The goal of this project is to make it easy to create multiplayer games in C#. The project can in theory be used in any framework or game engine, however note that it has been build and tested in the Unity3D game engine.
 
-The project provides a small layer on top of the TCP networking protocol that makes it easy to synchronise game state across multiple game instances by sending data in pre-defined packets from and to servers and clients.
+The project provides a small layer on top of the TCP networking protocol that makes it easy to synchronise state across multiple game instances by sending data in pre-defined packets from and to servers and clients. On top of this it provides a framework for shared state which is the Oracle/Replicator pattern.
 
 Current limitations and/or drawbacks:
-- Currently under heavy development so the api might receive significant changes up until `version 1.0.0` is released.
-- Additional work is required to get physics simulations up and running since the library doesn't handle latency for this.
-- UDP protocol is not (yet) supported. It might be added at a later point in time. Currently there are no plans to add it. Once added it will provide a protocol with lower latency but without guarenteed package deliveree.
-- The 'oracle and replicator' pattern has not yet been implemented. It will provide an easy way to setup different entity types to be synched across the server and clients.
-- ... and more
+- *Still under development* - The api will receive significant changes up until `version 1.0.0` is released.
+- *No physics simulation support* - Additional work is required to get physics simulations up and running since the library doesn't handle latency for this.
+- *UDP protocol is not (yet) supported* - Support for UDP might be added at a later point in time. Currently there are no plans to add it. Once added it will provide a protocol with lower latency but without guarenteed package deliveree.
 
 A roadmap for the library can be found on this [trello board](https://trello.com/b/iQpvyCq5/multiplayer).
 
@@ -57,7 +55,7 @@ client.OnPacketReceived += (Packet packet) => {
 The karman multiplayer library is build out of 3 layers.
   1. The first layer is TCP. The karman multiplayer library is build on top of tcp.
   2. The second layer is the KarmanProtocol layer. This layer abstract individual tcp connections and lets you work with clients.
-  3. The third layer is your game layer, which can contain many different modules that use the events invoked by the KarmanProtocol layer. An example module is a ping module to keep track of the latency of the connected clients. For this game layer the oracle / replicator structure is recommended, however you are free to build and create modules in whatever way you prefer.
+  3. The third layer is your game layer, which can contain many different modules that use the events invoked by the KarmanProtocol layer. An example module is a ping module to keep track of the latency of the connected clients. For this game layer the oracle / replicator pattern is recommended, however you are free to build and create modules in whatever way you prefer.
 
 ## Development Guide
 The development guide explains how the karman multiplayer library can be used. First the tcp protocol and bytes arrays are explained. Then the packets that the library uses are explained. Then the KarmanServer is discussed in depth. After that the KarmanClient is discussed. And lastly the Oracle and Replicator pattern is explained.
@@ -140,6 +138,8 @@ If a client drops its connection it will attempt to reconnect using a new connec
 ### Oracle and replicator pattern
 > TODO: More information about the 'oracle and replicator'-pattern coming soon.
 
+The classes required to work with this pattern can be found in the `KarmanLibrary.ORPattern` namespace.
+
 ## Examples
 A few different example implementations using the karman multiplayer library already exist.
 
@@ -147,4 +147,4 @@ A few different example implementations using the karman multiplayer library alr
 
 - **B11 Party Game** - A game that uses the karman multiplayer library. [B11 Party Game](https://www.simonkarman.nl/projects/b11-party) is a multiplayer game based on Mario Party with minigames themed around the 11th board of study association Sticky. It uses `version 0.1.0` of this libary and was used to prove the usefullness, stability, and speed of development of this library.
 
-- **Elemental Arena** - A game that uses the karman multiplayer. [Elemental Areana](https://github.com/simonkarman/elemental-arena) is a multiplayer game under development by Simon Karman and Rik Dolfing, this game is what initiated the development of the Karman Multiplayer library.
+- **Elemental Arena** - A game that uses the karman multiplayer. [Elemental Areana](https://github.com/simonkarman/elemental-arena) is a multiplayer game under development by Simon Karman and Rik Dolfing, this game is what initiated the development of the Karman Multiplayer library. It makes uses of the Oracle and Replicator pattern.

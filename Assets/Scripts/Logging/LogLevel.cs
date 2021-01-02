@@ -1,8 +1,8 @@
 ﻿namespace Logging {
     public enum LogLevel {
-        TRACE = 0,
-        INFO = 1,
-        WARNING = 2,
-        ERROR = 3,
+        Trace = 0,
+        Info = 1,
+        Warning = 2,
+        Error = 3,
     }
 }

@@ -52,7 +52,7 @@ public class MineOracle : MonoBehaviour {
             nextSpawnMoment += spawnRate;
             GameObject instance = Instantiate(minePrefab, transform);
             MineData mine = new MineData(Guid.NewGuid(), transform.position + RandomPointInBounds(spawnBounds), UnityEngine.Random.Range(minMineDuration, maxMineDuration), instance);
-            Debug.Log("Spawning a new mine:" + mine.GetId());
+            Debug.Log("Spawning a new mine: " + mine.GetId());
             karmanServer.Broadcast(mine.GetSpawnPacket());
         }
     }

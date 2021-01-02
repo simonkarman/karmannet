@@ -33,23 +33,23 @@ namespace Logging {
         }
 
         public void Trace(string message, params object[] args) {
-            Log(LogLevel.TRACE, message, args);
+            Log(LogLevel.Trace, message, args);
         }
 
         public void Info(string message, params object[] args) {
-            Log(LogLevel.INFO, message, args);
+            Log(LogLevel.Info, message, args);
         }
 
         public void Warning(string message, params object[] args) {
-            Log(LogLevel.WARNING, message, args);
+            Log(LogLevel.Warning, message, args);
         }
 
         public void Error(string message, params object[] args) {
-            Log(LogLevel.ERROR, message, args);
+            Log(LogLevel.Error, message, args);
         }
 
         public void Error(Exception ex) {
-            Log(LogLevel.ERROR, "{0} {1}", ex.GetType().Name, ex.Message);
+            Log(LogLevel.Error, "{0} {1}", ex.GetType().Name, ex.Message);
         }
 
         public T Exit<T>(LogLevel logLevel, T messageObject) {
@@ -58,15 +58,15 @@ namespace Logging {
         }
 
         public T ExitTrace<T>(T messageObject) {
-            return Exit(LogLevel.TRACE, messageObject);
+            return Exit(LogLevel.Trace, messageObject);
         }
 
         public T ExitInfo<T>(T messageObject) {
-            return Exit(LogLevel.INFO, messageObject);
+            return Exit(LogLevel.Info, messageObject);
         }
 
         public T ExitWarning<T>(T messageObject) {
-            return Exit(LogLevel.WARNING, messageObject);
+            return Exit(LogLevel.Warning, messageObject);
         }
 
         public T ExitError<T>(T messageObject) {
@@ -74,7 +74,7 @@ namespace Logging {
                 Error(ex);
                 return messageObject;
             } else {
-                return Exit(LogLevel.ERROR, messageObject);
+                return Exit(LogLevel.Error, messageObject);
             }
         }
     }

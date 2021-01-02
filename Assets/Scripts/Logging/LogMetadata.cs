@@ -13,7 +13,7 @@ namespace Logging {
         }
 
         public string GetClassName() {
-            return loggerType.FullName;
+            return loggerType.ToString();
         }
 
         public DateTime GetTimestamp() {

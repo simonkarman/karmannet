@@ -14,10 +14,10 @@ namespace Logging {
             default:
                 unityLogFunction = Debug.LogFormat;
                 break;
-            case LogLevel.WARNING:
+            case LogLevel.Warning:
                 unityLogFunction = Debug.LogWarningFormat;
                 break;
-            case LogLevel.ERROR:
+            case LogLevel.Error:
                 unityLogFunction = Debug.LogErrorFormat;
                 break;
             }
