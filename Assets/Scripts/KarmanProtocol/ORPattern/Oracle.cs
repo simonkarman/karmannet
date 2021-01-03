@@ -18,7 +18,9 @@ namespace KarmanProtocol.ORPattern {
         }
 
         private void OnClientConnected(Guid clientId) {
-            server.Send(clientId, state.GetEntirePacket());
+            var entirePacket = state.GetEntirePacket();
+            log.Info("Sending an entire packet of type {0} to the client that just connected with id {1}", entirePacket.GetType().Name, clientId);
+            server.Send(clientId, entirePacket);
         }
 
         private void OnClientPacketReceived(Guid clientId, Packet packet) {
@@ -30,9 +32,10 @@ namespace KarmanProtocol.ORPattern {
                 log.Trace("Ignored a {0} packet since the shared state identifier is {1}", packet.GetType().Name, stateChangeRequest.GetSharedStateIdentifier());
                 return;
             }
-            log.Trace("Received a {0} packet", packet.GetType().Name);
+            log.Info("Received a {0} packet", packet.GetType().Name);
             StateChangeResult result = RequestStateChange(stateChangeRequest, clientId);
             if (result.IsError) {
+                log.Info("Sending a StateChangeFailedEvent packet");
                 server.Send(clientId, new StateChangeFailedEvent(sharedStateIdentifier, packet.GetType().FullName, result.GetErrorReason()));
             }
         }
@@ -52,11 +55,11 @@ namespace KarmanProtocol.ORPattern {
             ImmutableT oldState = GetState();
             StateChangeResult result = state.TryHandle(stateChangeRequest, requester);
             if (result.IsOk) {
-                log.Trace("Succesfully handled a state change request from {0}", requester);
+                log.Info("Sending a {0} packet after successfully handling a state change from {1}", result.GetStateChangeEvent().GetType().Name, requester);
                 server.Broadcast(result.GetStateChangeEvent());
                 StateChanged(GetState(), oldState, result.GetStateChangeEvent());
             } else {
-                log.Trace("Failed to handle a state change request from {0}. Reason: {1}", requester, result.GetErrorReason());
+                log.Warning("Failed to handle a state change request of type {0} from {1}. Reason: {2}", stateChangeRequest.GetType().Name, requester, result.GetErrorReason());
             }
             return result;
         }

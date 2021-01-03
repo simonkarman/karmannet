@@ -28,7 +28,7 @@ namespace KarmanProtocol.ORPattern {
                 StateChangeFailed(GetState(), stateChangeFailedEvent.GetPacketName(), stateChangeFailedEvent.GetReason());
                 return;
             } else if (packet is StateChangeEvent stateChangeEvent) {
-                log.Trace("Received a {0} packet", packet.GetType().Name);
+                log.Info("Received a {0} packet", packet.GetType().Name);
                 ImmutableT oldState = GetState();
                 state.Apply(stateChangeEvent);
                 StateChanged(GetState(), oldState, stateChangeEvent);
@@ -48,6 +48,7 @@ namespace KarmanProtocol.ORPattern {
             if (!sharedStateIdentifier.Equals(stateChangeRequest.GetSharedStateIdentifier())) {
                 return false;
             }
+            log.Info("Sending a {0} packet", stateChangeRequest.GetType().Name);
             client.Send(stateChangeRequest);
             return true;
         }
