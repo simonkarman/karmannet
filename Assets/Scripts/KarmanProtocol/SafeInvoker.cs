@@ -1,6 +1,5 @@
 ﻿using System;
 using Logging;
-using Networking;
 
 namespace KarmanProtocol {
     public class SafeInvoker {
@@ -59,6 +58,21 @@ namespace KarmanProtocol {
                 foreach (Delegate invocation in action.GetInvocationList()) {
                     try {
                         (invocation as Action<T1, T2, T3>)?.Invoke(obj1, obj2, obj3);
+                    } catch (Exception ex) {
+                        allSucceeded = false;
+                        LogExceptionError(log, name, ex);
+                    }
+                }
+            }
+            return allSucceeded;
+        }
+
+        public static bool Invoke<T1, T2, T3, T4>(Logger log, string name, Action<T1, T2, T3, T4> action, T1 obj1, T2 obj2, T3 obj3, T4 obj4) {
+            bool allSucceeded = true;
+            if (action != null) {
+                foreach (Delegate invocation in action.GetInvocationList()) {
+                    try {
+                        (invocation as Action<T1, T2, T3, T4>)?.Invoke(obj1, obj2, obj3, obj4);
                     } catch (Exception ex) {
                         allSucceeded = false;
                         LogExceptionError(log, name, ex);

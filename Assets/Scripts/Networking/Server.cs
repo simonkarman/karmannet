@@ -70,7 +70,7 @@ namespace Networking {
 
         private readonly ManualResetEvent acceptDone = new ManualResetEvent(false);
         private readonly Dictionary<Guid, Connection> connections = new Dictionary<Guid, Connection>();
-        private readonly PacketFactory packetFactory;
+        private readonly Factory<Packet> packetFactory;
         private Socket rootSocket;
 
         public ServerStatus Status { get; private set; } = ServerStatus.NEW;
@@ -82,7 +82,7 @@ namespace Networking {
         public Action<Guid, Packet> OnPacketReceivedCallback;
 
         public Server() {
-            packetFactory = PacketFactory.BuildFromAllAssemblies();
+            packetFactory = Factory<Packet>.BuildFromAllAssemblies();
             ThreadManager.Activate();
         }
 

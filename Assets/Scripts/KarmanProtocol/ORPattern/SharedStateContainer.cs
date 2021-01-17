@@ -8,17 +8,18 @@ namespace KarmanProtocol.ORPattern {
             log = new Logging.Logger(GetType());
         }
 
-        protected void StateChanged(ImmutableT newState, ImmutableT oldState, StateChangeEvent stateChangeEvent) {
-            SafeInvoker.Invoke(log, "OnStateChanged", OnStateChanged, newState, oldState, stateChangeEvent);
+        protected void StateChanged(ImmutableT newState, ImmutableT oldState, SharedStatePacket<ImmutableT> changeOrigin) {
+            SafeInvoker.Invoke(log, "OnStateChanged", OnStateChanged, newState, oldState, changeOrigin);
         }
 
         protected void StateChangeFailed(ImmutableT newState, string packetTypeName, string reason) {
             SafeInvoker.Invoke(log, "OnStateChangeFailed", OnStateChangeFailed, newState, packetTypeName, reason);
         }
 
-        public Action<ImmutableT, ImmutableT, StateChangeEvent> OnStateChanged;
+        public Action<ImmutableT> OnStateInitialized;
+        public Action<ImmutableT, ImmutableT, SharedStatePacket<ImmutableT>> OnStateChanged;
         public Action<ImmutableT, string, string> OnStateChangeFailed;
         public abstract ImmutableT GetState();
-        public abstract bool RequestStateChange(StateChangeRequest stateChangeRequest);
+        public abstract void RequestStateChange(ChangeStateRequest<ImmutableT> stateChangeRequest);
     }
 }

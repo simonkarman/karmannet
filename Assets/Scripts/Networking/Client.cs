@@ -12,7 +12,7 @@ namespace Networking {
         private readonly ManualResetEvent connectDone = new ManualResetEvent(false);
         private readonly ByteFramer byteFramer;
         private readonly ByteSender byteSender;
-        private readonly PacketFactory packetFactory;
+        private readonly Factory<Packet> packetFactory;
 
         public IPEndPoint serverEndpoint;
         private Socket socket;
@@ -24,7 +24,7 @@ namespace Networking {
         public Action<Packet> OnPacketReceivedCallback;
 
         public Client() {
-            packetFactory = PacketFactory.BuildFromAllAssemblies();
+            packetFactory = Factory<Packet>.BuildFromAllAssemblies();
             ThreadManager.Activate();
             byteFramer = new ByteFramer(MAX_FRAME_SIZE, OnFrameReceived);
             byteSender = new ByteSender(this);

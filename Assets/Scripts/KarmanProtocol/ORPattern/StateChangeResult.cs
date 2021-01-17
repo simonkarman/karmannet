@@ -1,39 +1,47 @@
 using System;
 
 namespace KarmanProtocol.ORPattern {
-    public class StateChangeResult {
+    public class StateChangeResult<ImmutableT> {
         private readonly string errorReason;
-        private readonly StateChangeEvent stateChangeEvent;
+        private readonly StateChangedEvent<ImmutableT> stateChangedEvent;
 
-        private StateChangeResult(string errorReason, StateChangeEvent stateChangeEvent) {
+        private StateChangeResult(string errorReason, StateChangedEvent<ImmutableT> stateChangedEvent) {
             this.errorReason = errorReason;
-            this.stateChangeEvent = stateChangeEvent;
+            this.stateChangedEvent = stateChangedEvent;
         }
 
-        public static StateChangeResult Ok(StateChangeEvent stateChangeEvent) {
+        public static StateChangeResult<ImmutableT> None() {
+            return new StateChangeResult<ImmutableT>(null, null);
+        }
+
+        public static StateChangeResult<ImmutableT> Ok(StateChangedEvent<ImmutableT> stateChangeEvent) {
             if (stateChangeEvent == null) {
                 throw new ArgumentNullException("stateChangeEvent");
             }
-            return new StateChangeResult(null, stateChangeEvent);
+            return new StateChangeResult<ImmutableT>(null, stateChangeEvent);
         }
 
-        public static StateChangeResult Error(string errorReason) {
+        public static StateChangeResult<ImmutableT> Error(string errorReason) {
             if (errorReason == null) {
                 throw new ArgumentNullException("errorReason");
             }
-            return new StateChangeResult(errorReason, null);
+            return new StateChangeResult<ImmutableT>(errorReason, null);
         }
 
-        public static StateChangeResult UnknownRequest() {
-            return new StateChangeResult("unknown request", null);
+        public static StateChangeResult<ImmutableT> UnknownRequest() {
+            return new StateChangeResult<ImmutableT>("unknown request", null);
         }
 
-        public static StateChangeResult Unauthorized() {
-            return new StateChangeResult("unauthorized", null);
+        public static StateChangeResult<ImmutableT> Unauthorized() {
+            return new StateChangeResult<ImmutableT>("unauthorized", null);
+        }
+
+        public bool IsNone {
+            get { return errorReason == null && stateChangedEvent == null; }
         }
 
         public bool IsOk {
-            get { return errorReason == null; }
+            get { return stateChangedEvent != null; }
         }
 
         public bool IsError {
@@ -44,8 +52,8 @@ namespace KarmanProtocol.ORPattern {
             return errorReason;
         }
 
-        public StateChangeEvent GetStateChangeEvent() {
-            return stateChangeEvent;
+        public StateChangedEvent<ImmutableT> GetStateChangedEvent() {
+            return stateChangedEvent;
         }
     }
 }

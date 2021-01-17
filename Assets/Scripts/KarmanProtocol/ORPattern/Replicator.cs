@@ -2,13 +2,13 @@ using Networking;
 using System.Collections.Generic;
 
 namespace KarmanProtocol.ORPattern {
-    public class Replicator<T, ImmutableT>: SharedStateContainer<ImmutableT> where T : IReplicatorSharedState<ImmutableT> {
+    public sealed class Replicator<MutableT, ImmutableT>: SharedStateContainer<ImmutableT> where MutableT : ISharedState<ImmutableT> {
         private readonly string sharedStateIdentifier;
         private readonly KarmanClient client;
-        private readonly T state;
+        private MutableT state;
 
-        public Replicator(string sharedStateIdentifier, KarmanClient client, T initialState) {
-            this.sharedStateIdentifier = sharedStateIdentifier;
+        public Replicator(KarmanClient client, MutableT initialState) {
+            sharedStateIdentifier = typeof(ImmutableT).FullName;
             state = initialState;
 
             this.client = client;
@@ -16,41 +16,41 @@ namespace KarmanProtocol.ORPattern {
         }
 
         private void OnPacketReceived(Packet packet) {
-            if (!(packet is IStateChangePacket stateChangePacket)) {
-                log.Trace("Ignored a {0} packet since the packet is not a IStateChangePacket", packet.GetType().Name);
-                return;
-            }
-            if (!sharedStateIdentifier.Equals(stateChangePacket.GetSharedStateIdentifier())) {
-                log.Trace("Ignored a {0} packet since the shared state identifier is {1}", packet.GetType().Name, stateChangePacket.GetSharedStateIdentifier());
-                return;
-            }
-            if (packet is StateChangeFailedEvent stateChangeFailedEvent) {
+            if (packet is StateChangeFailedEvent stateChangeFailedEvent && stateChangeFailedEvent.GetSharedStateIdentifier().Equals(sharedStateIdentifier)) {
                 StateChangeFailed(GetState(), stateChangeFailedEvent.GetPacketName(), stateChangeFailedEvent.GetReason());
                 return;
-            } else if (packet is StateChangeEvent stateChangeEvent) {
-                log.Info("Received a {0} packet", packet.GetType().Name);
-                ImmutableT oldState = GetState();
-                state.Apply(stateChangeEvent);
-                StateChanged(GetState(), oldState, stateChangeEvent);
+            }
+
+            if (!(packet is SharedStatePacket<ImmutableT>)) {
+                log.Trace("Ignored a {0} packet since the packet is not a SharedStatePacket<{1}>", packet.GetType().Name, typeof(ImmutableT).Name);
+                return;
+            }
+            log.Info("Received a {0} packet", packet.GetType().Name);
+            
+            ImmutableT oldState = GetState();
+            if (packet is StateInitializationPacket<MutableT, ImmutableT> entireStateChangedEvent) {
+                state = entireStateChangedEvent.ToState();
+                StateChanged(GetState(), oldState, entireStateChangedEvent);
+
+            } else if (packet is StateChangedEvent<ImmutableT> stateChangedEvent) {
+                state.Apply(stateChangedEvent);
+                StateChanged(GetState(), oldState, stateChangedEvent);
+
             } else {
                 log.Error("Failed to handle {0} packet", packet.GetType().Name);
             }
         }
 
         public override ImmutableT GetState() {
-            if (EqualityComparer<T>.Default.Equals(state, default)) {
+            if (EqualityComparer<MutableT>.Default.Equals(state, default)) {
                 return default;
             }
-            return state.ToImmutableClone();
+            return state.ToValue();
         }
 
-        public override bool RequestStateChange(StateChangeRequest stateChangeRequest) {
-            if (!sharedStateIdentifier.Equals(stateChangeRequest.GetSharedStateIdentifier())) {
-                return false;
-            }
+        public override void RequestStateChange(ChangeStateRequest<ImmutableT> stateChangeRequest) {
             log.Info("Sending a {0} packet", stateChangeRequest.GetType().Name);
             client.Send(stateChangeRequest);
-            return true;
         }
     }
 }

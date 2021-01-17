@@ -1,7 +1,8 @@
 using Networking;
+using System;
 
 namespace KarmanProtocol.ORPattern {
-    public class StateChangeFailedEvent : Packet, IStateChangePacket {
+    public class StateChangeFailedEvent : SharedStatePacket<object> {
         private readonly string sharedStateIdentifier;
         private readonly string packetTypeName;
         private readonly string reason;
@@ -12,7 +13,8 @@ namespace KarmanProtocol.ORPattern {
             reason = ReadString();
         }
 
-        public StateChangeFailedEvent(string sharedStateIdentifier, string packetTypeName, string reason) : base(
+        public StateChangeFailedEvent(Guid requestId, string sharedStateIdentifier, string packetTypeName, string reason) : base(
+            requestId,
             Bytes.Pack(Bytes.Of(sharedStateIdentifier), Bytes.Of(packetTypeName), Bytes.Of(reason))
         ) {
             this.sharedStateIdentifier = sharedStateIdentifier;
@@ -24,7 +26,7 @@ namespace KarmanProtocol.ORPattern {
             return !string.IsNullOrEmpty(sharedStateIdentifier) && !string.IsNullOrEmpty(reason);
         }
 
-        public string GetSharedStateIdentifier() {
+        public new string GetSharedStateIdentifier() {
             return sharedStateIdentifier;
         }
 
