@@ -30,7 +30,7 @@ namespace KarmanProtocol.ORPattern {
             ImmutableT oldState = GetState();
             if (packet is StateInitializationPacket<MutableT, ImmutableT> entireStateChangedEvent) {
                 state = entireStateChangedEvent.ToState();
-                StateChanged(GetState(), oldState, entireStateChangedEvent);
+                StateInitialized(GetState());
 
             } else if (packet is StateChangedEvent<ImmutableT> stateChangedEvent) {
                 state.Apply(stateChangedEvent);

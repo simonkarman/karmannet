@@ -10,10 +10,6 @@ namespace KarmanProtocol.ORPattern {
             this.stateChangedEvent = stateChangedEvent;
         }
 
-        public static StateChangeResult<ImmutableT> None() {
-            return new StateChangeResult<ImmutableT>(null, null);
-        }
-
         public static StateChangeResult<ImmutableT> Ok(StateChangedEvent<ImmutableT> stateChangeEvent) {
             if (stateChangeEvent == null) {
                 throw new ArgumentNullException("stateChangeEvent");
@@ -34,10 +30,6 @@ namespace KarmanProtocol.ORPattern {
 
         public static StateChangeResult<ImmutableT> Unauthorized() {
             return new StateChangeResult<ImmutableT>("unauthorized", null);
-        }
-
-        public bool IsNone {
-            get { return errorReason == null && stateChangedEvent == null; }
         }
 
         public bool IsOk {

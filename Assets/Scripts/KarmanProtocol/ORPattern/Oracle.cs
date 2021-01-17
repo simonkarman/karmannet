@@ -18,7 +18,7 @@ namespace KarmanProtocol.ORPattern {
         }
 
         private void OnClientConnected(Guid clientId) {
-            StateInitializationPacket<MutableT, ImmutableT> entirePacket = state.GetEntirePacket();
+            StateInitializationPacket<MutableT, ImmutableT> entirePacket = state.GetStateInitializationPacket();
             log.Info("Sending an entire packet of type {0} to the client that just connected with id {1}", entirePacket.GetType().Name, clientId);
             server.Send(clientId, entirePacket);
         }
@@ -30,9 +30,6 @@ namespace KarmanProtocol.ORPattern {
             }
             log.Info("Received a {0} packet", packet.GetType().Name);
             StateChangeResult<ImmutableT> result = RequestStateChange(stateChangeRequest, clientId);
-            if (result.IsNone) {
-                // TODO: send a none event to update request awaiter at replicator
-            }
             if (result.IsError) {
                 log.Info("Sending a StateChangeFailedEvent packet");
                 server.Send(clientId, new StateChangeFailedEvent(stateChangeRequest.GetRequestId(), sharedStateIdentifier, packet.GetType().FullName, result.GetErrorReason()));
@@ -41,9 +38,6 @@ namespace KarmanProtocol.ORPattern {
 
         public override void RequestStateChange(ChangeStateRequest<ImmutableT> stateChangeRequest) {
             StateChangeResult<ImmutableT> result = RequestStateChange(stateChangeRequest, Guid.Empty);
-            if (result.IsNone) {
-                // TODO: directly update request awaiter in oracle
-            }
             if (result.IsError) {
                 StateChangeFailed(GetState(), stateChangeRequest.GetType().FullName, result.GetErrorReason());
             }
