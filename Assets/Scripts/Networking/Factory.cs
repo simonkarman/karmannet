@@ -46,14 +46,6 @@ namespace Networking {
                     typeof(T).Name
                 )));
             }
-            ConstructorInfo constructor = type.GetConstructor(new[] { typeof(byte[]) });
-            if (constructor == null) {
-                throw log.ExitError(new FactoryAssignException(string.Format(
-                    "Cannot assign type {0} in Factory<{1}>, because no constructor exists in {0} that takes a single parameter of type byte[].",
-                    type.Name,
-                    typeof(T).Name
-                )));
-            }
             if (constructors.TryGetValue(identifier, out ConstructorInfo existingConstructorInfo)) {
                 throw log.ExitError(new FactoryAssignException(string.Format(
                     "Cannot assign type {0} to identifier {1} in Factory<{2}>, because the identifier {1} has already been assigned to type {3}.",
@@ -61,6 +53,14 @@ namespace Networking {
                     identifier,
                     typeof(T).Name,
                     existingConstructorInfo.DeclaringType.Name
+                )));
+            }
+            ConstructorInfo constructor = type.GetConstructor(new[] { typeof(byte[]) });
+            if (constructor == null) {
+                throw log.ExitError(new FactoryAssignException(string.Format(
+                    "Cannot assign type {0} in Factory<{1}>, because no constructor exists in {0} that takes a single parameter of type byte[].",
+                    type.Name,
+                    typeof(T).Name
                 )));
             }
             if (identifiers.TryGetValue(type, out int existingIdentifier)) {
