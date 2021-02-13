@@ -1,0 +1,16 @@
+{
+    "name": "KarmanNet.Networking",
+    "rootNamespace": "",
+    "references": [
+        "GUID:3caef5e7e093f2a4a8f7163b8b46330c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

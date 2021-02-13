@@ -1,4 +1,4 @@
-﻿using KarmanProtocol;
+﻿using KarmanNet.Protocol;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,7 +18,7 @@ public class CharacterReplicator : MonoBehaviour {
         karmanClient.OnLeftCallback += OnLeft;
     }
 
-    private void OnPacketReceived(Networking.Packet packet) {
+    private void OnPacketReceived(KarmanNet.Networking.Packet packet) {
         if (packet is CharacterSpawnPacket characterSpawnPacket) {
             OnCharacterSpawnPacketReceived(characterSpawnPacket);
         } else if (packet is CharacterDestroyPacket characterDestroyPacket) {

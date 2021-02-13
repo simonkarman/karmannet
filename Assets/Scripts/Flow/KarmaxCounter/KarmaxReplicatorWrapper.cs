@@ -1,7 +1,7 @@
 using UnityEngine;
-using KarmanProtocol.Karmax;
+using KarmanNet.Karmax;
 
-namespace KarmaxExample {
+namespace KarmaxCounter {
     public class KarmaxReplicatorWrapper : KarmaxWrapper {
         [SerializeField]
         private ClientFlow clientFlow = default;

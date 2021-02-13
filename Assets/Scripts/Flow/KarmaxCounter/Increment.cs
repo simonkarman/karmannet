@@ -1,7 +1,7 @@
-using KarmanProtocol.Karmax;
-using Networking;
+using KarmanNet.Karmax;
+using KarmanNet.Networking;
 
-namespace KarmaxExample {
+namespace KarmaxCounter {
     public class Increment : Mutation<CounterFragment> {
         private readonly int amount;
 

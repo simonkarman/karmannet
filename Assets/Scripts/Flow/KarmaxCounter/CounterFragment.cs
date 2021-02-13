@@ -1,7 +1,7 @@
-using KarmanProtocol.Karmax;
-using Networking;
+using KarmanNet.Karmax;
+using KarmanNet.Networking;
 
-namespace KarmaxExample {
+namespace KarmaxCounter {
     public class CounterFragment : Fragment {
         private readonly int value;
 

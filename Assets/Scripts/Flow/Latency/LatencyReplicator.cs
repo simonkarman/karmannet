@@ -1,5 +1,5 @@
-﻿using KarmanProtocol;
-using Networking;
+﻿using KarmanNet.Protocol;
+using KarmanNet.Networking;
 using UnityEngine;
 
 public class LatencyReplicator : MonoBehaviour {

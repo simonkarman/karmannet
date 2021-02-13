@@ -1,10 +1,10 @@
-﻿using KarmanProtocol;
-using Networking;
+﻿using KarmanNet.Protocol;
+using KarmanNet.Networking;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Logger = Logging.Logger;
+using Logger = KarmanNet.Logging.Logger;
 
 public class PingMoment {
     private readonly Guid pingId;

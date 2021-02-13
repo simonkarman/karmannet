@@ -1,9 +1,9 @@
-using KarmanProtocol.Karmax;
+using KarmanNet.Karmax;
 using System;
 using System.Collections;
 using UnityEngine;
 
-namespace KarmaxExample {
+namespace KarmaxCounter {
     public class KarmaxOracleWrapper : KarmaxWrapper {
         [SerializeField]
         private ServerFlow serverFlow = default;

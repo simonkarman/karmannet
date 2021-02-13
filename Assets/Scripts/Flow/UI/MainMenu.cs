@@ -14,7 +14,7 @@ public class MainMenu : MonoBehaviour {
     private Text connectButtonText = default;
 
     protected void Start() {
-        Networking.ThreadManager.Activate();
+        KarmanNet.Networking.ThreadManager.Activate();
         connectionStringInput.text = PlayerPrefs.GetString(ClientFlow.CONNECTION_STRING_PLAYER_PREFS_KEY, "localhost");
     }
 
@@ -30,9 +30,9 @@ public class MainMenu : MonoBehaviour {
         Thread thread = new Thread(() => {
             try {
                 Debug.Log(string.Format("Parsing of connection string '{0}'", connectionString), this);
-                IPEndPoint endpoint = Networking.ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_SERVER_PORT);
+                IPEndPoint endpoint = KarmanNet.Networking.ConnectionString.Parse(connectionString, ServerFlow.DEFAULT_SERVER_PORT);
                 Debug.Log(string.Format("Parsing connection string '{0}' resulted in {1}", connectionString, endpoint.ToString()), this);
-                Networking.ThreadManager.ExecuteOnMainThread(() => {
+                KarmanNet.Networking.ThreadManager.ExecuteOnMainThread(() => {
                     PlayerPrefs.SetString(ClientFlow.CONNECTION_STRING_PLAYER_PREFS_KEY, connectionStringInput.text);
                     PlayerPrefs.Save();
                     SceneManager.LoadScene("Client");
@@ -40,7 +40,7 @@ public class MainMenu : MonoBehaviour {
             } catch (Exception exception) {
                 Debug.LogError(string.Format("Parsing connection string '{0}' failed: {1}", connectionString, exception.ToString()), this);
             } finally {
-                Networking.ThreadManager.ExecuteOnMainThread(() => {
+                KarmanNet.Networking.ThreadManager.ExecuteOnMainThread(() => {
                     connectButton.interactable = true;
                     connectButtonText.text = "Connect";
                     connectionStringInput.interactable = true;

@@ -1,6 +1,6 @@
-﻿using Logging;
+﻿using KarmanNet.Logging;
 using UnityEngine;
-using Logger = Logging.Logger;
+using Logger = KarmanNet.Logging.Logger;
 
 public class LoggingConfiguration : MonoBehaviour {
     private static readonly Logger log = Logger.For<LoggingConfiguration>();

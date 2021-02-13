@@ -1,0 +1,17 @@
+{
+    "name": "KarmanNet.Protocol",
+    "rootNamespace": "",
+    "references": [
+        "GUID:27bd693cc242f3c49bb61edff92c163f",
+        "GUID:3caef5e7e093f2a4a8f7163b8b46330c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

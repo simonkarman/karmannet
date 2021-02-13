@@ -1,4 +1,4 @@
-﻿using KarmanProtocol;
+﻿using KarmanNet.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -1,9 +1,11 @@
 {
     "name": "Flow",
+    "rootNamespace": "",
     "references": [
         "GUID:27bd693cc242f3c49bb61edff92c163f",
         "GUID:0ad9b84eaac37fe4eaf519018503fcb6",
-        "GUID:3caef5e7e093f2a4a8f7163b8b46330c"
+        "GUID:3caef5e7e093f2a4a8f7163b8b46330c",
+        "GUID:82b625763956244449ae0fccdb15ad43"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

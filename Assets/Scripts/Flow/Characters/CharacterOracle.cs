@@ -1,4 +1,4 @@
-﻿using KarmanProtocol;
+﻿using KarmanNet.Protocol;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -48,7 +48,7 @@ public class CharacterOracle : MonoBehaviour {
         characters.Remove(clientId);
     }
 
-    private void OnClientPacketReceived(Guid clientId, Networking.Packet packet) {
+    private void OnClientPacketReceived(Guid clientId, KarmanNet.Networking.Packet packet) {
         if (packet is CharacterUpdatePositionPacket characterUpdatePositionPacket) {
             CharacterData character = characters[clientId];
             if (character.GetId().Equals(characterUpdatePositionPacket.GetId())) {

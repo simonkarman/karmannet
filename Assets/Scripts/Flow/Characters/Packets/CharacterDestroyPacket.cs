@@ -1,4 +1,4 @@
-﻿using Networking;
+﻿using KarmanNet.Networking;
 using System;
 
 public class CharacterDestroyPacket : Packet {

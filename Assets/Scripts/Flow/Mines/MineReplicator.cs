@@ -1,4 +1,4 @@
-﻿using KarmanProtocol;
+﻿using KarmanNet.Protocol;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,7 +17,7 @@ public class MineReplicator : MonoBehaviour {
         karmanClient.OnLeftCallback += OnLeft;
     }
 
-    private void OnPacketReceived(Networking.Packet packet) {
+    private void OnPacketReceived(KarmanNet.Networking.Packet packet) {
         if (packet is MineSpawnPacket mineSpawnPacket) {
             OnMineSpawnPacketReceived(mineSpawnPacket);
         }

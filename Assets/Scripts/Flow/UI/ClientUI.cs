@@ -1,4 +1,4 @@
-﻿using KarmanProtocol;
+﻿using KarmanNet.Protocol;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;

@@ -1,7 +1,7 @@
-﻿using Networking;
+﻿using KarmanNet.Networking;
 using System;
 
-namespace KarmanProtocol {
+namespace KarmanNet.Protocol {
     public class PingResponsePacket : Packet {
 
         private readonly Guid pingId;

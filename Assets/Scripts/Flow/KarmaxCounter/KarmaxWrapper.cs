@@ -1,13 +1,13 @@
-using KarmanProtocol.Karmax;
+using KarmanNet.Karmax;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace KarmaxExample {
+namespace KarmaxCounter {
     public abstract class KarmaxWrapper : MonoBehaviour {
-        private readonly static Logging.Logger log = Logging.Logger.For<KarmaxWrapper>();
+        private readonly static KarmanNet.Logging.Logger log = KarmanNet.Logging.Logger.For<KarmaxWrapper>();
 
         protected Container container;
 
