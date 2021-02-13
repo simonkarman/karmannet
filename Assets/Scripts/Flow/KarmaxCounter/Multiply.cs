@@ -1,7 +1,8 @@
+using KarmanProtocol.Karmax;
 using Networking;
 
 namespace KarmaxExample {
-    public class Multiply : CounterFragmentMutation {
+    public class Multiply : Mutation<CounterFragment> {
         private readonly int product;
 
         public Multiply(byte[] bytes) : base(bytes) {
@@ -24,7 +25,7 @@ namespace KarmaxExample {
             return true;
         }
 
-        public override CounterFragment ApplyOn(CounterFragment counterFragment) {
+        protected override CounterFragment Mutate(CounterFragment counterFragment) {
             return new CounterFragment(counterFragment.GetValue() * product);
         }
     }

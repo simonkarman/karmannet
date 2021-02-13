@@ -33,9 +33,13 @@ namespace Tests {
 
         [Test]
         public void ShouldBytifyAStringCorrectly() {
-            Assert.AreEqual(Bytes.GetString(Bytes.Of("abc"), out int count1), "abc");
-            Assert.AreEqual(Bytes.GetString(Bytes.Of("✂️"), out int count2), "✂️");
+            Assert.AreEqual(Bytes.GetString(Bytes.Pack(new byte[2], Bytes.Of("abc"), new byte[2]), out int count1, 2), "abc");
             Assert.AreEqual(7, count1);
+        }
+
+        [Test]
+        public void ShouldBytifyANonAsciiStringCorrectly() {
+            Assert.AreEqual(Bytes.GetString(Bytes.Of("✂️"), out int count2), "✂️");
             Assert.AreEqual(10, count2);
         }
 
@@ -51,6 +55,14 @@ namespace Tests {
             byte[] guidBytes = Bytes.Of(guid);
             Assert.AreEqual(guidBytes.Length, 16);
             Assert.AreEqual(Bytes.GetGuid(guidBytes), guid);
+        }
+
+        [Test]
+        public void ShouldBytifyAGuidArrayCorrectly() {
+            Guid[] guidArray = new[] { Guid.NewGuid(), Guid.NewGuid() };
+            byte[] guidArrayBytes = Bytes.Of(guidArray);
+            Assert.AreEqual(guidArrayBytes.Length, guidArray.Length * 16 + 4);
+            Assert.AreEqual(Bytes.GetGuidArray(guidArrayBytes), guidArray);
         }
 
         [Test]

@@ -1,7 +1,8 @@
+using KarmanProtocol.Karmax;
 using Networking;
 
 namespace KarmaxExample {
-    public class Increment : CounterFragmentMutation {
+    public class Increment : Mutation<CounterFragment> {
         private readonly int amount;
 
         public Increment(byte[] bytes) : base(bytes) {
@@ -24,7 +25,7 @@ namespace KarmaxExample {
             return true;
         }
 
-        public override CounterFragment ApplyOn(CounterFragment counterFragment) {
+        protected override CounterFragment Mutate(CounterFragment counterFragment) {
             return new CounterFragment(counterFragment.GetValue() + amount);
         }
     }

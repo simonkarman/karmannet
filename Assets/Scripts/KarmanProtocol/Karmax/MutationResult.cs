@@ -10,7 +10,7 @@ namespace KarmanProtocol.Karmax {
             this.failureReason = failureReason;
         }
 
-        public static MutationResult Ok(Fragment fragment) {
+        public static MutationResult Success(Fragment fragment) {
             if (fragment == null) {
                 throw new ArgumentNullException("fragment");
             }
@@ -24,12 +24,12 @@ namespace KarmanProtocol.Karmax {
             return new MutationResult(null, reason);
         }
 
-        public bool IsFailure() {
-            return failureReason != null;
-        }
-
         public Fragment GetFragment() {
             return fragment;
+        }
+
+        public bool IsFailure() {
+            return failureReason != null;
         }
 
         public string GetFailureReason() {

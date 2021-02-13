@@ -27,6 +27,10 @@ namespace Networking {
         private readonly Dictionary<Type, int> identifiers = new Dictionary<Type, int>();
         private readonly Dictionary<int, ConstructorInfo> constructors = new Dictionary<int, ConstructorInfo>();
 
+        public Type[] GetTypes() {
+            return identifiers.Keys.ToArray();
+        }
+
         public static Factory<T> BuildFromAllAssemblies() {
             Factory<T> factory = new Factory<T>();
             foreach (var type in AppDomain.CurrentDomain.GetAssemblies().SelectMany(assembly => assembly.GetTypes())) {

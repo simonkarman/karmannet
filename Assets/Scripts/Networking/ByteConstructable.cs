@@ -31,6 +31,12 @@ namespace Networking {
             return value;
         }
 
+        protected int[] ReadIntArray() {
+            int[] value = Bytes.GetInt32Array(bytes, marker);
+            marker += (value.Length * 4) + 4;
+            return value;
+        }
+
         protected float ReadFloat() {
             float value = Bytes.GetFloat(bytes, marker);
             marker += 4;
@@ -56,6 +62,12 @@ namespace Networking {
         protected Guid ReadGuid() {
             Guid value = Bytes.GetGuid(bytes, marker);
             marker += 16;
+            return value;
+        }
+
+        protected Guid[] ReadGuidArray() {
+            Guid[] value = Bytes.GetGuidArray(bytes, marker);
+            marker += (value.Length * 16) + 4;
             return value;
         }
 
