@@ -1,4 +1,5 @@
 using KarmanNet.Karmax;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +11,8 @@ namespace KarmaxCounter {
         private readonly static KarmanNet.Logging.Logger log = KarmanNet.Logging.Logger.For<KarmaxWrapper>();
 
         protected Container container;
+        private string lastStateText = "none";
+        private string lastFailedText = "";
 
         [SerializeField]
         private Text stateRepresentation = default;
@@ -17,11 +20,12 @@ namespace KarmaxCounter {
         protected virtual IEnumerator Start() {
             container = BuildContainer();
             container.OnMutatedCallback += OnMutated;
+            container.OnMutationFailedCallback += OnMutationFailed;
             log.Info("Started!");
             yield return new WaitForSeconds(5f);
             while (true) {
                 yield return new WaitForSeconds(1f);
-                container.Request(GetFragmentName(), Increment.By(1));
+                container.Request(GetFragmentName(), IncrementOrSet.At(3));
             }
         }
 
@@ -29,7 +33,17 @@ namespace KarmaxCounter {
         protected abstract string GetFragmentName();
 
         private void OnMutated(IReadOnlyDictionary<string, Fragment> state, string fragmentId, Mutation mutation) {
-            stateRepresentation.text = string.Join("\n", state.Select(kvp => $"<b>{kvp.Key}</b>: {kvp.Value}").Reverse());
+            lastStateText = string.Join("\n", state.Select(kvp => $"<b>{kvp.Key}</b>: {kvp.Value}").Reverse());
+            UpdateText();
+        }
+
+        private void OnMutationFailed(Guid id, string failureReason) {
+            lastFailedText = $"Last failure ({DateTime.Now:yyyy-MM-dd HH:mm:ss}): ${failureReason} ({id})\n\n";
+            UpdateText();
+        }
+
+        private void UpdateText() {
+            stateRepresentation.text = $"{lastFailedText}State:\n{lastStateText}";
         }
     }
 }

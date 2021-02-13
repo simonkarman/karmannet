@@ -21,5 +21,13 @@ namespace KarmanNet.Karmax {
         public override bool IsValid() {
             return id != Guid.Empty && failureReason != null && failureReason.Length > 0;
         }
+
+        public Guid GetId() {
+            return id;
+        }
+
+        public string GetFailureReason() {
+            return failureReason;
+        }
     }
 }

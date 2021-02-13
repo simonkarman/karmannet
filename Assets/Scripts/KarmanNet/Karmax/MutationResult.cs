@@ -24,6 +24,14 @@ namespace KarmanNet.Karmax {
             return new MutationResult(null, reason);
         }
 
+        public static MutationResult Delete() {
+            return new MutationResult(null, null);
+        }
+
+        public bool IsSuccess() {
+            return fragment != null;
+        }
+
         public Fragment GetFragment() {
             return fragment;
         }
@@ -34,6 +42,10 @@ namespace KarmanNet.Karmax {
 
         public string GetFailureReason() {
             return failureReason;
+        }
+
+        public bool IsDelete() {
+            return fragment == null && failureReason == null;
         }
     }
 }

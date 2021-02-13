@@ -2,19 +2,15 @@ using KarmanNet.Karmax;
 using KarmanNet.Networking;
 
 namespace KarmaxCounter {
-    public class CounterFragment : Fragment {
+    public class Counter : Fragment {
         private readonly int value;
 
-        public CounterFragment(byte[] bytes) : base(bytes) {
+        public Counter(byte[] bytes) : base(bytes) {
             value = ReadInt();
         }
 
-        public CounterFragment(int value) : base(Bytes.Of(value)) {
+        public Counter(int value) : base(Bytes.Of(value)) {
             this.value = value;
-        }
-
-        public static CounterFragment Identity() {
-            return new CounterFragment(0);
         }
 
         public override bool IsValid() {

@@ -1,4 +1,5 @@
-﻿using KarmanNet.Protocol;
+﻿using KarmanNet.Networking;
+using KarmanNet.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -67,7 +68,7 @@ public class ServerUI : MonoBehaviour {
         }
     }
     private readonly Dictionary<Guid, ServerUIClientInfo> clients = new Dictionary<Guid, ServerUIClientInfo>();
-    private bool showClients = true;
+    private bool showClients = false;
     private bool acceptingClients = false;
 
     protected void Start() {
@@ -144,6 +145,8 @@ public class ServerUI : MonoBehaviour {
     }
 
     public void BackToMainMenu() {
+        serverFlow.GetKarmanServer().Shutdown();
+        ThreadManager.Flush();
         SceneManager.LoadScene("MainMenu");
     }
 

@@ -8,7 +8,7 @@ namespace KarmanNet.Protocol {
     public class KarmanServer {
         private static readonly Logger log = Logger.For<KarmanServer>();
 
-        public const string KARMAN_PROTOCOL_VERSION = "0.5.0";
+        public const string KARMAN_PROTOCOL_VERSION = "0.5.1";
         public const string DEFAULT_PASSWORD = "";
 
         private class Client {

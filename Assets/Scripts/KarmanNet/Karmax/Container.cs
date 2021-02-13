@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace KarmanNet.Karmax {
     public abstract class Container {
-        private readonly static KarmanNet.Logging.Logger log = KarmanNet.Logging.Logger.For<Container>();
+        private readonly static Logging.Logger log = Logging.Logger.For<Container>();
         protected readonly Factory<Mutation> mutationFactory;
         protected readonly Factory<Fragment> fragmentFactory;
 
@@ -13,11 +13,12 @@ namespace KarmanNet.Karmax {
         public readonly Guid id;
         protected IReadOnlyDictionary<string, Fragment> state;
         public Action<IReadOnlyDictionary<string, Fragment>, string, Mutation> OnMutatedCallback;
+        public Action<Guid, string> OnMutationFailedCallback;
 
         public Container(Guid containerId) {
             // Verify container uniqueness
             if (containers.Contains(containerId)) {
-                throw new Exception("Only one Oracle/Replicator instance is allowed per Server/Client.");
+                throw log.ExitError(new Exception($"Trying to create a container with id {containerId}, while a container with that id is already in use. Only one container is allowed per server/client."));
             }
             containers.Add(containerId);
             id = containerId;
@@ -25,15 +26,14 @@ namespace KarmanNet.Karmax {
             // Build factories
             mutationFactory = Factory<Mutation>.BuildFromAllAssemblies();
             fragmentFactory = Factory<Fragment>.BuildFromAllAssemblies();
-            foreach (var fragmentType in fragmentFactory.GetTypes()) {
-                var identityMethod = fragmentType.GetMethod("Identity");
-                if (identityMethod == null || !identityMethod.IsStatic || identityMethod.IsAbstract || identityMethod.ReturnType != fragmentType || identityMethod.GetParameters().Length > 0) {
-                    throw log.ExitError(new Exception($"Missing Identity() method in {fragmentType.Name}. It should have the following signature: public static ${fragmentType.Name} Identity();"));
-                }
-            }
 
             // Initialize state
             state = new Dictionary<string, Fragment>();
+        }
+
+        protected void ReleaseContainer() {
+            log.Info("Releasing Karmax container");
+            containers.Remove(id);
         }
 
         public abstract Guid Request(string fragmentId, Mutation mutation);

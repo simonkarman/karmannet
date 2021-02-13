@@ -1,8 +1,9 @@
 using KarmanNet.Karmax;
 using KarmanNet.Networking;
+using System;
 
 namespace KarmaxCounter {
-    public class Increment : Mutation<CounterFragment> {
+    public class Increment : Mutation.Update<Counter> {
         private readonly int amount;
 
         public Increment(byte[] bytes) : base(bytes) {
@@ -17,16 +18,12 @@ namespace KarmaxCounter {
             return new Increment(amount);
         }
 
-        public int GetAmount() {
-            return amount;
-        }
-
         public override bool IsValid() {
             return true;
         }
 
-        protected override CounterFragment Mutate(CounterFragment counterFragment) {
-            return new CounterFragment(counterFragment.GetValue() + amount);
+        protected override Counter Mutate(Counter counterFragment, Guid requester) {
+            return new Counter(counterFragment.GetValue() + amount);
         }
     }
 }

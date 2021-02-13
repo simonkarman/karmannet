@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace KarmanNet.Networking {
     public class ThreadManager : MonoBehaviour {
-        private static readonly KarmanNet.Logging.Logger log = KarmanNet.Logging.Logger.For<ThreadManager>();
+        private static readonly Logging.Logger log = Logging.Logger.For<ThreadManager>();
 
         private static ThreadManager instance;
         private readonly List<Action> requestedActions = new List<Action>();
@@ -15,6 +15,10 @@ namespace KarmanNet.Networking {
                 log.Trace("Thread Manager activated");
                 instance = new GameObject("Thread Manager").AddComponent<ThreadManager>();
             }
+        }
+
+        public static void Flush() {
+            instance.Update();
         }
 
         public static void ExecuteOnMainThread(Action _action) {

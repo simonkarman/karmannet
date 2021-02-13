@@ -11,7 +11,7 @@ namespace KarmaxCounter {
         }
 
         protected override string GetFragmentName() {
-            return $"client/${container.id}";
+            return $"client/{container.id}/counter";
         }
     }
 }
