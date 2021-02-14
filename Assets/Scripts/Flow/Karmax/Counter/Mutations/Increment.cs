@@ -1,9 +1,10 @@
 using KarmanNet.Karmax;
 using KarmanNet.Networking;
 using System;
+using System.Collections.Generic;
 
 namespace KarmaxCounter {
-    public class Increment : Mutation.Update<Counter> {
+    public class Increment : UpdateMutation<Counter> {
         private readonly int amount;
 
         public Increment(byte[] bytes) : base(bytes) {
@@ -22,8 +23,8 @@ namespace KarmaxCounter {
             return true;
         }
 
-        protected override Counter Mutate(Counter counterFragment, Guid requester) {
-            return new Counter(counterFragment.GetValue() + amount);
+        protected override UpdateResult<Counter> Update(Counter counterFragment, IReadOnlyDictionary<string, Fragment> state, string fragmentId, Guid requester) {
+            return UpdateResult<Counter>.Success(new Counter(counterFragment.GetValue() + amount));
         }
     }
 }

@@ -1,20 +1,20 @@
 using System;
 
-namespace KarmanNet.Karmax {
+namespace KarmanNet.Karmax { 
     public class MutationResult {
+        private const string prefix = "karmax/";
+        public static readonly MutationResult ImposterFailure = Failure($"{prefix}imposter");
+        public static readonly MutationResult ResultNullFailure = Failure($"{prefix}result-null");
+        public static readonly MutationResult FragmentNotFoundFailure = Failure($"{prefix}fragment/not-found");
+        public static readonly MutationResult FragmentAlreadyExistsFailure = Failure($"{prefix}fragment/already-exists");
+        public static readonly MutationResult FragmentTypeMismatchFailure = Failure($"{prefix}fragment/type-mismatch");
+
         private readonly Fragment fragment;
         private readonly string failureReason;
 
-        private MutationResult(Fragment fragment, string failureReason) {
+        protected MutationResult(Fragment fragment, string failureReason) {
             this.fragment = fragment;
             this.failureReason = failureReason;
-        }
-
-        public static MutationResult Success(Fragment fragment) {
-            if (fragment == null) {
-                throw new ArgumentNullException("fragment");
-            }
-            return new MutationResult(fragment, null);
         }
 
         public static MutationResult Failure(string reason) {

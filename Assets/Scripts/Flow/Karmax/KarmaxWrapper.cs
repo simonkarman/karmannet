@@ -19,7 +19,7 @@ namespace KarmaxCounter {
 
         protected virtual IEnumerator Start() {
             container = BuildContainer();
-            container.OnMutatedCallback += OnMutated;
+            container.OnStateChangedCallback += OnStateChanged;
             container.OnMutationFailedCallback += OnMutationFailed;
             log.Info("Started!");
             yield return new WaitForSeconds(5f);
@@ -32,7 +32,7 @@ namespace KarmaxCounter {
         protected abstract Container BuildContainer();
         protected abstract string GetFragmentName();
 
-        private void OnMutated(IReadOnlyDictionary<string, Fragment> state, string fragmentId, Mutation mutation) {
+        private void OnStateChanged(IReadOnlyDictionary<string, Fragment> state, string fragmentId, Mutation mutation) {
             lastStateText = string.Join("\n", state.Select(kvp => $"<b>{kvp.Key}</b>: {kvp.Value}").Reverse());
             UpdateText();
         }

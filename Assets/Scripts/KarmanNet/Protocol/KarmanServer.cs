@@ -79,8 +79,8 @@ namespace KarmanNet.Protocol {
             this.password = password ?? DEFAULT_PASSWORD;
 
             server = new Server();
-            server.OnRunningCallback += () => SafeInvoker.Invoke(log, "OnRunningCallback", OnRunningCallback);
-            server.OnShutdownCallback += () => SafeInvoker.Invoke(log, "OnShutdownCallback", OnShutdownCallback);
+            server.OnRunningCallback += () => SafeInvoker.Invoke(log, OnRunningCallback);
+            server.OnShutdownCallback += () => SafeInvoker.Invoke(log, OnShutdownCallback);
             server.OnConnectedCallback += OnConnected;
             server.OnDisconnectedCallback += OnDisconnected;
             server.OnPacketReceivedCallback += OnPacketReceived;
@@ -125,7 +125,7 @@ namespace KarmanNet.Protocol {
             if (client.GetConnectionId() == connectionId) {
                 log.Warning("Connection {0} dropped while it was still connected to client {1} (client is still available for reconnection attempts)", connectionId, clientId);
                 client.RemoveConnectionId();
-                SafeInvoker.Invoke(log, "OnClientDisconnectedCallback", OnClientDisconnectedCallback, clientId);
+                SafeInvoker.Invoke(log, OnClientDisconnectedCallback, clientId);
 
             } else {
                 log.Warning("Connection {0} that disconnected was used for client {1}, but that client is already using a new connection {2}", connectionId, clientId, client.GetConnectionId());
@@ -171,7 +171,7 @@ namespace KarmanNet.Protocol {
                     log.Info("Connection {0} is creating a new client {1} (secret {2}-**...)", connectionId, clientId, clientSecret.ToString().Substring(0, 13));
 
                     List<string> rejections = new List<string>();
-                    SafeInvoker.Invoke(log, "OnClientAcceptanceCallback", OnClientAcceptanceCallback, (rejection) => rejections.Add(rejection));
+                    SafeInvoker.Invoke(log, OnClientAcceptanceCallback, (rejection) => rejections.Add(rejection));
                     if (rejections.Count > 0) {
                         string reason = string.Join(", ", rejections);
                         log.Warning("Connection {0} was rejected trying to create client {1}. Reason: {2}", connectionId, clientId, reason);
@@ -195,10 +195,10 @@ namespace KarmanNet.Protocol {
                     server.Send(connectionId, new ClientAcceptedPacket());
                     log.Info("Client {0} accepted on connection {1}", clientId, connectionId);
                     if (newPlayer) {
-                        SafeInvoker.Invoke(log, "OnClientJoinedCallback", OnClientJoinedCallback, clientId, clientName);
+                        SafeInvoker.Invoke(log, OnClientJoinedCallback, clientId, clientName);
                     }
                     if (clients.ContainsKey(clientId)) {
-                        SafeInvoker.Invoke(log, "OnClientConnectedCallback", OnClientConnectedCallback, clientId);
+                        SafeInvoker.Invoke(log, OnClientConnectedCallback, clientId);
                     } else {
                         log.Info("Client {0} was kicked while it was joining the server", clientId);
                     }
@@ -222,7 +222,7 @@ namespace KarmanNet.Protocol {
                 Kick(clientId, "Client left");
 
             } else {
-                SafeInvoker.Invoke(log, "OnClientPacketReceivedCallback", OnClientPacketReceivedCallback, clientId, packet);
+                SafeInvoker.Invoke(log, OnClientPacketReceivedCallback, clientId, packet);
             }
         }
 
@@ -252,7 +252,7 @@ namespace KarmanNet.Protocol {
                     log.Warning("Connection {0} of client {1} could not be disconnected, due to the following reason: {2}", connectionId, clientId, ex);
                 }
             }
-            SafeInvoker.Invoke(log, "OnClientLeftCallback", OnClientLeftCallback, clientId, reason);
+            SafeInvoker.Invoke(log, OnClientLeftCallback, clientId, reason);
         }
 
         public void Broadcast(Packet packet, Guid exceptClientId = default) {

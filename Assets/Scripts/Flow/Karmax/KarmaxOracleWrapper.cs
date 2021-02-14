@@ -24,8 +24,8 @@ namespace KarmaxCounter {
                 container.Request($"client/{clientId}", Increment.By(-1));
             };
             karmanServer.OnClientLeftCallback += (Guid clientId, string reason) => {
-                container.Request($"client/{clientId}/counter", new Mutation.Delete());
-                container.Request($"client/{clientId}", new Mutation.Delete());
+                container.Request($"client/{clientId}/counter", new Clear());
+                container.Request($"client/{clientId}", new Clear());
             };
             yield return StartCoroutine(base.Start());
         }

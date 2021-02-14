@@ -1,9 +1,10 @@
 using KarmanNet.Karmax;
 using KarmanNet.Networking;
 using System;
+using System.Collections.Generic;
 
 namespace KarmaxCounter {
-    public class Set : Mutation.Insert<Counter> {
+    public class Set : InsertMutation<Counter> {
         private readonly int value;
 
         public Set(byte[] bytes) : base(bytes) {
@@ -22,8 +23,8 @@ namespace KarmaxCounter {
             return true;
         }
 
-        protected override Counter Instantiate(Guid requester) {
-            return new Counter(value);
+        protected override InsertResult<Counter> Insert(IReadOnlyDictionary<string, Fragment> state, string fragmentId, Guid requester) {
+            return InsertResult<Counter>.Success(new Counter(value));
         }
     }
 }

@@ -5,7 +5,7 @@ namespace KarmanNet.Karmax {
     public class MutationFailedPacket : Packet {
         private readonly Guid id;
         private readonly string failureReason;
-
+        
         public MutationFailedPacket(byte[] bytes) : base(bytes) {
             id = ReadGuid();
             failureReason = ReadString();

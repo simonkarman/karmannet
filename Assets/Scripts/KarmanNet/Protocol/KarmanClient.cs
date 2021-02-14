@@ -65,7 +65,7 @@ namespace KarmanNet.Protocol {
         }
 
         private void OnDisconnected() {
-            SafeInvoker.Invoke(log, "OnDisconnectedCallback", OnDisconnectedCallback);
+            SafeInvoker.Invoke(log, OnDisconnectedCallback);
             if (reconnectionAttempt >= 3) {
                 log.Error("Client was unable to reconnect to the server, server will now be left");
                 Leave("Reconnection failed");
@@ -75,7 +75,7 @@ namespace KarmanNet.Protocol {
                 string message = "Client was unable to connect to the server";
                 log.Error(message);
                 hasLeft = true;
-                SafeInvoker.Invoke(log, "OnLeftCallback", OnLeftCallback, message);
+                SafeInvoker.Invoke(log, OnLeftCallback, message);
                 return;
             }
             if (!hasLeft) {
@@ -132,9 +132,9 @@ namespace KarmanNet.Protocol {
 
                 if (!hasJoined) {
                     hasJoined = true;
-                    SafeInvoker.Invoke(log, "OnJoinedCallback", OnJoinedCallback);
+                    SafeInvoker.Invoke(log, OnJoinedCallback);
                 }
-                SafeInvoker.Invoke(log, "OnConnectedCallback", OnConnectedCallback);
+                SafeInvoker.Invoke(log, OnConnectedCallback);
 
             } else if (packet is LeavePacket leavePacket) {
                 string message = string.Format("Kicked by server. Reason: {0}", leavePacket.GetReason());
@@ -143,7 +143,7 @@ namespace KarmanNet.Protocol {
 
             } else {
                 log.Trace("Received a {0} packet from server", packet.GetType().Name);
-                SafeInvoker.Invoke(log, "OnPacketReceivedCallback", OnPacketReceivedCallback, packet);
+                SafeInvoker.Invoke(log, OnPacketReceivedCallback, packet);
             }
         }
 
@@ -161,7 +161,7 @@ namespace KarmanNet.Protocol {
             } catch (Exception ex) {
                 log.Warning("Connection with server could not be disconnected, due to the following reason: {0}", ex);
             }
-            SafeInvoker.Invoke(log, "OnLeftCallback", OnLeftCallback, reason);
+            SafeInvoker.Invoke(log, OnLeftCallback, reason);
         }
 
         public void Send(Packet packet) {

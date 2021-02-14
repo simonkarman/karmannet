@@ -1,7 +1,7 @@
 using KarmanNet.Networking;
 
 namespace KarmanNet.Karmax {
-    public class FragmentPacket : Packet {
+    internal class FragmentPacket : Packet {
         private readonly string id;
         private readonly byte[] payload;
 
