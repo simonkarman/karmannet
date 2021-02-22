@@ -71,11 +71,15 @@ namespace KarmanNet.Networking {
             return value;
         }
 
-        protected byte[] ReadRestBytes() {
-            int numberOfRestBytes = bytes.Length - marker;
-            byte[] restBytes = new byte[numberOfRestBytes]; 
-            Array.Copy(bytes, marker, restBytes, 0, numberOfRestBytes);
+        protected byte[] ReadByteArray(int numberOfBytes) {
+            byte[] restBytes = new byte[numberOfBytes];
+            Array.Copy(bytes, marker, restBytes, 0, numberOfBytes);
+            marker += numberOfBytes;
             return restBytes;
+        }
+
+        protected byte[] ReadRestAsByteArray() {
+            return ReadByteArray(bytes.Length - marker);
         }
 
         protected UnityEngine.Vector2 ReadVector2() {

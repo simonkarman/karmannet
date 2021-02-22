@@ -12,7 +12,7 @@ namespace KarmanNet.Karmax {
             id = ReadGuid();
             requester = ReadGuid();
             fragmentId = ReadString();
-            payload = ReadRestBytes();
+            payload = ReadRestAsByteArray();
         }
 
         public MutationPacket(Guid id, Guid requester, string fragmentId, byte[] payload) : base(

@@ -79,5 +79,15 @@ namespace KarmanNet.Tests {
         public void ShouldBytifyAQuaternionCorrectly() {
             Assert.AreEqual(Bytes.GetQuaternion(Bytes.Of(new Quaternion(3.14f, 8.12f, 123f, -123f))), new Quaternion(3.14f, 8.12f, 123f, -123f));
         }
+
+        [Test]
+        public void ShouldBytifyGuidDirectlyAndNotViaString() {
+            Guid guid = Guid.NewGuid();
+            int byteLength = Bytes.Of(guid).Length;
+            int byteLengthViaString = Bytes.Of(guid.ToString()).Length;
+            Debug.Log($"Bytes needed for Guid encoding: {byteLength}. Bytes needed for string encoding: {byteLengthViaString}.");
+            Assert.IsTrue(byteLength < byteLengthViaString);
+            Assert.AreEqual(byteLength, 16);
+        }
     }
 }

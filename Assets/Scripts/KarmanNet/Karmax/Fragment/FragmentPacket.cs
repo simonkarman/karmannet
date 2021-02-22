@@ -7,7 +7,7 @@ namespace KarmanNet.Karmax {
 
         public FragmentPacket(byte[] bytes) : base(bytes) {
             id = ReadString();
-            payload = ReadRestBytes();
+            payload = ReadRestAsByteArray();
         }
 
         public FragmentPacket(string id, byte[] payload) : base(Bytes.Pack(Bytes.Of(id), payload)) {
