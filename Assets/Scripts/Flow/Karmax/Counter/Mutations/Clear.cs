@@ -12,7 +12,7 @@ namespace KarmaxCounter {
             return true;
         }
 
-        protected override DeleteResult Delete(Counter counter, IReadOnlyDictionary<string, Fragment> state, string fragmentId, Guid requester) {
+        protected override DeleteResult Delete(Counter counter, IReadOnlyDictionary<FragmentKey, Fragment> state, FragmentKey key, Guid requester) {
             return DeleteResult.Delete();
         }
     }

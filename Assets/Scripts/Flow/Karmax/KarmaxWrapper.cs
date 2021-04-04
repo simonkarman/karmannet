@@ -25,15 +25,17 @@ namespace KarmaxCounter {
             yield return new WaitForSeconds(5f);
             while (true) {
                 yield return new WaitForSeconds(1f);
-                container.Request(GetFragmentName(), IncrementOrSet.At(3));
+                container.Request(GetScoreKey(), IncrementOrSet.At(3));
             }
         }
 
         protected abstract Container BuildContainer();
-        protected abstract string GetFragmentName();
+        protected ScoreKey GetScoreKey() {
+            return new ScoreKey(container.containerId);
+        }
 
-        private void OnStateChanged(IReadOnlyDictionary<string, Fragment> state, string fragmentId, Mutation mutation) {
-            lastStateText = string.Join("\n", state.Select(kvp => $"<b>{kvp.Key}</b>: {kvp.Value}").Reverse());
+        private void OnStateChanged(IReadOnlyDictionary<FragmentKey, Fragment> state, FragmentKey key, Mutation mutation) {
+            lastStateText = string.Join("\n", state.Select(kvp => $"<b>{kvp.Key.AsString()}</b>: {kvp.Value}").Reverse());
             UpdateText();
         }
 

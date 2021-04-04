@@ -23,7 +23,7 @@ namespace KarmaxCounter {
             return true;
         }
 
-        protected override UpdateResult<Counter> Update(Counter fragment, IReadOnlyDictionary<string, Fragment> state, string fragmentId, Guid requester) {
+        protected override UpdateResult<Counter> Update(Counter fragment, IReadOnlyDictionary<FragmentKey, Fragment> state, FragmentKey key, Guid requester) {
             return UpdateResult<Counter>.Success(new Counter(fragment.GetValue() * product));
         }
     }

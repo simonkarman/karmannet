@@ -2,25 +2,26 @@ using KarmanNet.Networking;
 
 namespace KarmanNet.Karmax {
     internal class FragmentPacket : Packet {
-        private readonly string id;
+        private readonly byte[] key;
         private readonly byte[] payload;
 
         public FragmentPacket(byte[] bytes) : base(bytes) {
-            id = ReadString();
+            int keyLength = ReadInt();
+            key = ReadByteArray(keyLength);
             payload = ReadRestAsByteArray();
         }
 
-        public FragmentPacket(string id, byte[] payload) : base(Bytes.Pack(Bytes.Of(id), payload)) {
-            this.id = id;
+        public FragmentPacket(byte[] key, byte[] payload) : base(Bytes.Pack(Bytes.Of(key.Length), key, payload)) {
+            this.key = key;
             this.payload = payload;
         }
 
         public override bool IsValid() {
-            return id != null && id.Length > 0 && payload != null && payload.Length >= 4;
+            return key != null && key.Length > 0 && payload != null && payload.Length >= 4;
         }
 
-        public string GetId() {
-            return id;
+        public byte[] GetKey() {
+            return key;
         }
 
         public byte[] GetPayload() {

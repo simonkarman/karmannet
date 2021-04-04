@@ -1,4 +1,5 @@
 using KarmanNet.Karmax;
+using KarmanNet.Networking;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -15,23 +16,19 @@ namespace KarmaxCounter {
         protected override IEnumerator Start() {
             var karmanServer = serverFlow.GetKarmanServer();
             karmanServer.OnClientJoinedCallback += (Guid clientId, string clientName) => {
-                container.Request($"client/{clientId}", Set.To(0));
+                container.Request(new ConnectionKey(clientId), Set.To(0));
             };
             karmanServer.OnClientConnectedCallback += (Guid clientId) => {
-                container.Request($"client/{clientId}", Increment.By(1));
+                container.Request(new ConnectionKey(clientId), Increment.By(1));
             };
             karmanServer.OnClientDisconnectedCallback += (Guid clientId) => {
-                container.Request($"client/{clientId}", Increment.By(-1));
+                container.Request(new ConnectionKey(clientId), Increment.By(-1));
             };
             karmanServer.OnClientLeftCallback += (Guid clientId, string reason) => {
-                container.Request($"client/{clientId}/counter", new Clear());
-                container.Request($"client/{clientId}", new Clear());
+                container.Request(new ScoreKey(clientId), new Clear());
+                container.Request(new ConnectionKey(clientId), new Clear());
             };
             yield return StartCoroutine(base.Start());
-        }
-
-        protected override string GetFragmentName() {
-            return "server";
         }
     }
 }

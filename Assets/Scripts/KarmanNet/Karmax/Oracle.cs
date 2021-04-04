@@ -23,7 +23,7 @@ namespace KarmanNet.Karmax {
 
         private void OnClientConnected(Guid clientId) {
             foreach (var kvp in state) {
-                server.Send(clientId, new FragmentPacket(kvp.Key, fragmentFactory.GetBytes(kvp.Value)));
+                server.Send(clientId, new FragmentPacket(fragmentKeyFactory.GetBytes(kvp.Key), fragmentFactory.GetBytes(kvp.Value)));
             }
         }
 
@@ -44,7 +44,7 @@ namespace KarmanNet.Karmax {
         private void HandleMutationBy(MutationPacket mutationPacket, Guid requester) {
             if (!TryApply(mutationPacket, out Mutation mutation, out MutationResult result)) {
                 if (requester.Equals(Guid.Empty)) {
-                    log.Warning($"Mutation[{mutationPacket.GetId()}] failed. Reason: {result.GetFailureReason()}. Details: {mutation.GetType().Name} on fragment[{mutationPacket.GetFragmentId()}].\nStackTrace: {Environment.StackTrace}");
+                    log.Warning($"Mutation[{mutationPacket.GetId()}] failed. Reason: {result.GetFailureReason()}. Details: {mutation.GetType().Name} on fragment[{fragmentKeyFactory.FromBytes(mutationPacket.GetKey()).AsString()}].\nStackTrace: {Environment.StackTrace}");
                     SafeInvoker.Invoke(log, OnMutationFailedCallback, mutationPacket.GetId(), result.GetFailureReason());
                 } else {
                     server.Send(requester, new MutationFailedPacket(mutationPacket.GetId(), result.GetFailureReason()));

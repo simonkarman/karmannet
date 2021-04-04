@@ -1,5 +1,6 @@
 using UnityEngine;
 using KarmanNet.Karmax;
+using KarmanNet.Networking;
 
 namespace KarmaxCounter {
     public class KarmaxReplicatorWrapper : KarmaxWrapper {
@@ -8,10 +9,6 @@ namespace KarmaxCounter {
 
         protected override Container BuildContainer() {
             return new Replicator(clientFlow.GetKarmanClient());
-        }
-
-        protected override string GetFragmentName() {
-            return $"client/{container.containerId}/counter";
         }
     }
 }

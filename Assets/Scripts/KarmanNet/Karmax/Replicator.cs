@@ -23,7 +23,8 @@ namespace KarmanNet.Karmax {
 
         private void OnPacketReceived(Packet packet) {
             if (packet is FragmentPacket fragmentPacket) {
-                state = state.CloneWith(fragmentPacket.GetId(), fragmentFactory.FromBytes(fragmentPacket.GetPayload()));
+                FragmentKey key = fragmentKeyFactory.FromBytes(fragmentPacket.GetKey());
+                state = state.CloneWith(key, fragmentFactory.FromBytes(fragmentPacket.GetPayload()));
             } else if (packet is MutationPacket mutationPacket) {
                 // If mutation was requested by me, then this request is no longer pending
                 if (mutationPacket.GetRequester().Equals(client.id)) {
@@ -33,7 +34,7 @@ namespace KarmanNet.Karmax {
                     // This should never happen since the mutation has already been succesfully applied at the Oracle. This
                     //  indicates that replication state is corrupt. This is a good reason to directly disconnect from the server.
                     string message = "Fatal Karmax replication failure";
-                    log.Error($"{message}. Corrupt state detected while applying {mutation.GetType().Name} on fragment[{mutationPacket.GetFragmentId()}]. Reason: {result.GetFailureReason()}");
+                    log.Error($"{message}. Corrupt state detected while applying {mutation.GetType().Name} on fragment[{fragmentKeyFactory.FromBytes(mutationPacket.GetKey()).AsString()}]. Reason: {result.GetFailureReason()}");
                     client.Leave(message);
                     return;
                 }
@@ -47,7 +48,7 @@ namespace KarmanNet.Karmax {
 
         protected override void Request(MutationPacket mutationPacket, Mutation mutation) {
             client.Send(mutationPacket);
-            pending.Add(mutationPacket.GetId(), $"{mutation.GetType().Name} on fragment[{mutationPacket.GetFragmentId()}].\nStackTrace: {Environment.StackTrace}");
+            pending.Add(mutationPacket.GetId(), $"{mutation.GetType().Name} on fragment[{fragmentKeyFactory.FromBytes(mutationPacket.GetKey()).AsString()}].\nStackTrace: {Environment.StackTrace}");
         }
     }
 }

@@ -5,22 +5,23 @@ namespace KarmanNet.Karmax {
     public class MutationPacket : Packet {
         private readonly Guid id;
         private readonly Guid requester;
-        private readonly string fragmentId;
+        private readonly byte[] key;
         private readonly byte[] payload;
 
         public MutationPacket(byte[] bytes) : base(bytes) {
             id = ReadGuid();
             requester = ReadGuid();
-            fragmentId = ReadString();
+            int fragmentIdLength = ReadInt();
+            key = ReadByteArray(fragmentIdLength);
             payload = ReadRestAsByteArray();
         }
 
-        public MutationPacket(Guid id, Guid requester, string fragmentId, byte[] payload) : base(
-            Bytes.Pack(Bytes.Of(id), Bytes.Of(requester), Bytes.Of(fragmentId), payload)
+        public MutationPacket(Guid id, Guid requester, byte[] key, byte[] payload) : base(
+            Bytes.Pack(Bytes.Of(id), Bytes.Of(requester), Bytes.Of(key.Length), key, payload)
         ) {
             this.id = id;
             this.requester = requester;
-            this.fragmentId = fragmentId;
+            this.key = key;
             this.payload = payload;
         }
 
@@ -32,8 +33,8 @@ namespace KarmanNet.Karmax {
             return requester;
         }
 
-        public string GetFragmentId() {
-            return fragmentId;
+        public byte[] GetKey() {
+            return key;
         }
 
         public byte[] GetPayload() {
@@ -41,7 +42,7 @@ namespace KarmanNet.Karmax {
         }
 
         public override bool IsValid() {
-            return id != Guid.Empty && fragmentId != null && fragmentId.Length > 0 && payload != null && payload.Length >= 4;
+            return id != Guid.Empty && key != null && key.Length > 0 && payload != null && payload.Length >= 4;
         }
     }
 }

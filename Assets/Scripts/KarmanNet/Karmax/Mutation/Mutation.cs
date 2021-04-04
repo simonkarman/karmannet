@@ -7,6 +7,6 @@ namespace KarmanNet.Karmax {
         protected readonly Logging.Logger log = Logging.Logger.For<Mutation>();
 
         protected Mutation(byte[] bytes) : base(bytes) { }
-        internal abstract MutationResult Mutate(IReadOnlyDictionary<string, Fragment> state, string fragmentId, Guid requester);
+        internal abstract MutationResult Mutate(IReadOnlyDictionary<FragmentKey, Fragment> state, FragmentKey key, Guid requester);
     }
 }
